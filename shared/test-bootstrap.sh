@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-echo "Testing Autopilot CLI Bootstrap..."
+echo "Testing Foreman CLI Bootstrap..."
 echo ""
 
 # Set up environment
@@ -15,17 +15,17 @@ echo "1. Testing bootstrap script sourcing..."
 source "${CLAUDE_PLUGIN_ROOT}/shared/bootstrap-cli.sh"
 echo ""
 
-echo "2. Testing autopilot-cli function..."
-if command -v autopilot-cli &> /dev/null; then
-  echo "✓ autopilot-cli function is available"
+echo "2. Testing skillstore-foreman function..."
+if command -v skillstore-foreman &> /dev/null; then
+  echo "✓ skillstore-foreman function is available"
 else
-  echo "✗ autopilot-cli function is NOT available"
+  echo "✗ skillstore-foreman function is NOT available"
   exit 1
 fi
 echo ""
 
 echo "3. Testing CLI execution..."
-VERSION=$(autopilot-cli --version 2>&1)
+VERSION=$(skillstore-foreman --version 2>&1)
 if [ $? -eq 0 ]; then
   echo "✓ CLI executed successfully"
   echo "  Version: $VERSION"
@@ -36,7 +36,7 @@ fi
 echo ""
 
 echo "4. Testing tasks list command..."
-if autopilot-cli tasks list --help > /dev/null 2>&1; then
+if skillstore-foreman tasks list --help > /dev/null 2>&1; then
   echo "✓ Tasks command works"
 else
   echo "✗ Tasks command failed"

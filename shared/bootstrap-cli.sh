@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Autopilot CLI Bootstrap Script
-# Include this at the top of every skill that uses autopilot-cli
+# Foreman CLI Bootstrap Script
+# Include this at the top of every skill that uses skillstore-foreman
 #
 # Usage in SKILL.md:
 #   source ${CLAUDE_PLUGIN_ROOT}/shared/bootstrap-cli.sh
@@ -52,16 +52,16 @@ fi
 
 # Determine plugin root
 if [ -z "${CLAUDE_PLUGIN_ROOT:-}" ]; then
-  # Fallback: assume script is in autopilot/shared/
+  # Fallback: assume script is in foreman/shared/
   CLAUDE_PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fi
 
-AUTOPILOT_CLI_PATH="${CLAUDE_PLUGIN_ROOT}/cli/dist/index.js"
-AUTOPILOT_CLI_DIR="${CLAUDE_PLUGIN_ROOT}/cli"
+FOREMAN_CLI_PATH="${CLAUDE_PLUGIN_ROOT}/cli/dist/index.js"
+FOREMAN_CLI_DIR="${CLAUDE_PLUGIN_ROOT}/cli"
 
 # Helper function to run CLI (more reliable than string expansion)
 _run_cli() {
-  node "${AUTOPILOT_CLI_PATH}" "$@"
+  node "${FOREMAN_CLI_PATH}" "$@"
 }
 
 # Logging helpers
@@ -97,17 +97,17 @@ log_step() {
 
 # Check if CLI binary exists
 check_cli_exists() {
-  [ -f "$AUTOPILOT_CLI_PATH" ]
+  [ -f "$FOREMAN_CLI_PATH" ]
 }
 
 # Check if node_modules exists
 check_dependencies_installed() {
-  [ -d "${AUTOPILOT_CLI_DIR}/node_modules" ]
+  [ -d "${FOREMAN_CLI_DIR}/node_modules" ]
 }
 
 # Validate CLI is executable and works
 validate_cli() {
-  if [ ! -f "$AUTOPILOT_CLI_PATH" ]; then
+  if [ ! -f "$FOREMAN_CLI_PATH" ]; then
     return 1
   fi
 
@@ -124,7 +124,7 @@ validate_cli() {
 check_node_version() {
   if ! command -v node &> /dev/null; then
     log_error "Node.js is not installed"
-    log_error "Autopilot requires Node.js >= 18.0.0"
+    log_error "Foreman requires Node.js >= 18.0.0"
     log_error "Install from: https://nodejs.org/"
     return 1
   fi
@@ -136,7 +136,7 @@ check_node_version() {
 
   if [ "$major_version" -lt 18 ]; then
     log_error "Node.js version $node_version is too old"
-    log_error "Autopilot requires Node.js >= 18.0.0"
+    log_error "Foreman requires Node.js >= 18.0.0"
     log_error "Current version: $node_version"
     return 1
   fi
@@ -152,7 +152,7 @@ check_node_version() {
 install_dependencies() {
   log_step "Installing dependencies..."
 
-  cd "$AUTOPILOT_CLI_DIR"
+  cd "$FOREMAN_CLI_DIR"
 
   # Use npm ci if package-lock.json exists, otherwise npm install
   if [ -f "package-lock.json" ]; then
@@ -179,7 +179,7 @@ install_dependencies() {
 build_typescript() {
   log_step "Compiling TypeScript..."
 
-  cd "$AUTOPILOT_CLI_DIR"
+  cd "$FOREMAN_CLI_DIR"
 
   # Run TypeScript compiler
   if npm run build --silent 2>&1 | grep -E "error TS|Build failed" >&2; then
@@ -188,8 +188,8 @@ build_typescript() {
   fi
 
   # Make output executable
-  if [ -f "$AUTOPILOT_CLI_PATH" ]; then
-    chmod +x "$AUTOPILOT_CLI_PATH"
+  if [ -f "$FOREMAN_CLI_PATH" ]; then
+    chmod +x "$FOREMAN_CLI_PATH"
     log_success "CLI compiled successfully"
     return 0
   else
@@ -203,7 +203,7 @@ build_cli() {
   if [ "${BOOTSTRAP_QUIET:-0}" != "1" ]; then
     echo ""
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${BOLD}🔧 Building Autopilot CLI${NC}"
+    echo -e "${BOLD}🔧 Building Foreman CLI${NC}"
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
   fi
 
@@ -238,7 +238,7 @@ build_cli() {
 # Main Bootstrap Logic
 # ============================================================
 
-bootstrap_autopilot_cli() {
+bootstrap_foreman_cli() {
   local force_rebuild="${FORCE_REBUILD:-0}"
 
   # Check if we should skip bootstrap
@@ -266,7 +266,7 @@ bootstrap_autopilot_cli() {
   if check_cli_exists; then
     if validate_cli; then
       # CLI exists and works - we're done
-      log_success "Autopilot CLI ready"
+      log_success "Foreman CLI ready"
       return 0
     else
       # CLI exists but is broken - rebuild
@@ -280,7 +280,7 @@ bootstrap_autopilot_cli() {
   else
     # CLI doesn't exist - build it
     if [ "${BOOTSTRAP_QUIET:-0}" != "1" ]; then
-      log_info "Autopilot CLI not found (this is normal on first use)"
+      log_info "Foreman CLI not found (this is normal on first use)"
     fi
     if ! build_cli; then
       log_error "CRITICAL: CLI build failed"
@@ -290,13 +290,13 @@ bootstrap_autopilot_cli() {
 
   # Final validation
   if validate_cli; then
-    log_success "Autopilot CLI ready"
+    log_success "Foreman CLI ready"
     return 0
   else
     log_error "CRITICAL: CLI validation failed after build"
     log_error ""
     log_error "Please report this issue:"
-    log_error "  https://github.com/mylukin/autopilot/issues"
+    log_error "  https://github.com/mylukin/foreman/issues"
     log_error ""
     log_error "Include this information:"
     log_error "  - Node.js version: $(node --version 2>&1 || echo 'not found')"
@@ -310,14 +310,14 @@ bootstrap_autopilot_cli() {
 # Exported Functions
 # ============================================================
 
-# Create autopilot-cli wrapper function for use in skills
-autopilot-cli() {
+# Create skillstore-foreman wrapper function for use in skills
+skillstore-foreman() {
   _run_cli "$@"
 }
 
 # Export functions for use in bash scripts
 export -f _run_cli
-export -f autopilot-cli
+export -f skillstore-foreman
 
 # ============================================================
 # Auto-Execute Bootstrap
@@ -329,11 +329,11 @@ export -f autopilot-cli
 # Check if script is being sourced (safely handle BASH_SOURCE)
 if [ -n "${BASH_SOURCE[0]:-}" ] && [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   # Script is being sourced, run bootstrap
-  bootstrap_autopilot_cli
+  bootstrap_foreman_cli
 elif [ -z "${BASH_SOURCE[0]:-}" ]; then
   # BASH_SOURCE not available (sourced in some shells), run bootstrap
-  bootstrap_autopilot_cli
+  bootstrap_foreman_cli
 else
   # Script is being executed directly (for testing)
-  echo "Bootstrap script loaded. Run: bootstrap_autopilot_cli"
+  echo "Bootstrap script loaded. Run: bootstrap_foreman_cli"
 fi

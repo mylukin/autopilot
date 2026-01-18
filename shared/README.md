@@ -1,31 +1,29 @@
 # Shared Bootstrap Scripts
 
-This directory contains reusable scripts for all Autopilot skills.
-
-> 此目录包含所有 Autopilot 技能的可重用脚本。
+This directory contains reusable scripts for all Foreman skills.
 
 ## Files
 
 ### `bootstrap-cli.sh` (Required)
 
-**Purpose:** Automatically detect, build, and validate the Autopilot TypeScript CLI.
+**Purpose:** Automatically detect, build, and validate the Foreman TypeScript CLI.
 
 **Usage in skills:**
 ```bash
-# At the top of any SKILL.md that uses autopilot-cli
+# At the top of any SKILL.md that uses skillstore-foreman
 source ${CLAUDE_PLUGIN_ROOT}/shared/bootstrap-cli.sh
 
 # Then use the CLI anywhere:
-autopilot-cli tasks list
-autopilot-cli state update --phase implement
+skillstore-foreman tasks list
+skillstore-foreman state update --phase implement
 ```
 
 **What it does:**
-1. ✅ Checks if CLI binary exists (`cli/dist/index.js`)
-2. ✅ Builds CLI if missing (npm install + TypeScript compilation)
-3. ✅ Validates CLI works correctly (runs `--version`)
-4. ✅ Provides friendly error messages if build fails
-5. ✅ Exports `autopilot-cli` function for use in skills
+1. Checks if CLI binary exists (`cli/dist/index.js`)
+2. Builds CLI if missing (npm install + TypeScript compilation)
+3. Validates CLI works correctly (runs `--version`)
+4. Provides friendly error messages if build fails
+5. Exports `skillstore-foreman` function for use in skills
 
 **First run:** 15-30 seconds (npm install + build)
 **Subsequent runs:** Instant (CLI already built)
@@ -38,7 +36,7 @@ autopilot-cli state update --phase implement
 **Example output:**
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🔧 Building Autopilot CLI
+🔧 Building Foreman CLI
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ▸ Installing dependencies...
 ✓ Dependencies installed
@@ -46,7 +44,7 @@ autopilot-cli state update --phase implement
 ✓ CLI compiled successfully
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-✓ Autopilot CLI ready
+✓ Foreman CLI ready
 ```
 
 ---
@@ -84,10 +82,10 @@ fallback_mark_done "$NEXT_TASK"
 ```
 
 **Limitations:**
-- ⚠️ No comprehensive context (unlike CLI's `tasks next`)
-- ⚠️ No dependency checking
-- ⚠️ No validation
-- ⚠️ Basic grep/sed parsing only
+- No comprehensive context (unlike CLI's `tasks next`)
+- No dependency checking
+- No validation
+- Basic grep/sed parsing only
 
 **When fallback activates:**
 ```
@@ -118,19 +116,19 @@ Available functions:
 
 **Tests:**
 1. Bootstrap script sources successfully
-2. `autopilot-cli` function is available
+2. `skillstore-foreman` function is available
 3. CLI executes and returns version
 4. CLI commands work (tasks list)
 
 **Expected output:**
 ```
-Testing Autopilot CLI Bootstrap...
+Testing Foreman CLI Bootstrap...
 
 1. Testing bootstrap script sourcing...
-✓ Autopilot CLI ready
+✓ Foreman CLI ready
 
-2. Testing autopilot-cli function...
-✓ autopilot-cli function is available
+2. Testing skillstore-foreman function...
+✓ skillstore-foreman function is available
 
 3. Testing CLI execution...
 ✓ CLI executed successfully
@@ -153,7 +151,7 @@ Testing Autopilot CLI Bootstrap...
 At the top of your skill execution section, add:
 
 ```markdown
-## Execution | 执行
+## Execution
 
 ### Step 0: Initialize CLI (Automatic)
 
@@ -162,16 +160,16 @@ At the top of your skill execution section, add:
 source ${CLAUDE_PLUGIN_ROOT}/shared/bootstrap-cli.sh
 
 # Verify CLI is ready (optional)
-autopilot-cli --version
+skillstore-foreman --version
 echo ""
 ```
 
 ### Step 1: Your actual skill logic...
 ```
 
-### Step 2: Use autopilot-cli Function
+### Step 2: Use skillstore-foreman Function
 
-Replace all `node cli/dist/index.js` calls with `autopilot-cli`:
+Replace all `node cli/dist/index.js` calls with `skillstore-foreman`:
 
 **Before:**
 ```bash
@@ -180,7 +178,7 @@ node cli/dist/index.js tasks list --status pending
 
 **After:**
 ```bash
-autopilot-cli tasks list --status pending
+skillstore-foreman tasks list --status pending
 ```
 
 ### Step 3: Test Your Skill
@@ -191,12 +189,12 @@ Run the skill and verify bootstrap works:
 # Subsequent runs: Should skip build
 
 # Expected first run:
-🔧 Building Autopilot CLI...
+🔧 Building Foreman CLI...
 ✓ CLI compiled successfully
-✓ Autopilot CLI ready
+✓ Foreman CLI ready
 
 # Expected subsequent runs:
-✓ Autopilot CLI ready
+✓ Foreman CLI ready
 ```
 
 ---
@@ -225,13 +223,13 @@ Run the skill and verify bootstrap works:
 **Solution:**
 Ensure `CLAUDE_PLUGIN_ROOT` is set correctly:
 ```bash
-export CLAUDE_PLUGIN_ROOT=/path/to/autopilot
+export CLAUDE_PLUGIN_ROOT=/path/to/foreman
 source ${CLAUDE_PLUGIN_ROOT}/shared/bootstrap-cli.sh
 ```
 
 ### Function Not Available
 
-**Error:** `autopilot-cli: command not found`
+**Error:** `skillstore-foreman: command not found`
 
 **Solution:**
 Make sure you're **sourcing** the script (not executing):
@@ -252,11 +250,11 @@ bash shared/bootstrap-cli.sh
 
 We chose **centralized CLI + shared bootstrap** (Option C) because:
 
-1. ✅ **Performance** - Compiled TypeScript is 8-10x faster than bash
-2. ✅ **Type safety** - Catch errors at compile time
-3. ✅ **Maintainability** - Single source of truth
-4. ✅ **Testing** - Full unit test coverage in TypeScript
-5. ✅ **User experience** - Auto-bootstrap makes it transparent
+1. **Performance** - Compiled TypeScript is 8-10x faster than bash
+2. **Type safety** - Catch errors at compile time
+3. **Maintainability** - Single source of truth
+4. **Testing** - Full unit test coverage in TypeScript
+5. **User experience** - Auto-bootstrap makes it transparent
 
 **Trade-off:**
 - Requires Node.js 18+ and npm 9+ (acceptable for modern development)
@@ -275,5 +273,5 @@ See [docs/CLI_ARCHITECTURE.md](../docs/CLI_ARCHITECTURE.md) for full rationale.
 
 ---
 
-**Maintained by:** Autopilot Team
-**Issues:** https://github.com/mylukin/autopilot/issues
+**Maintained by:** Foreman Team
+**Issues:** https://github.com/mylukin/foreman/issues

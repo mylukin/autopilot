@@ -1,73 +1,71 @@
 ---
-name: autopilot
+name: foreman
 description: Start autonomous end-to-end development from requirement to production-ready code
-usage: /autopilot "<requirement>" [--mode=<new|resume|status|cancel>]
+usage: /foreman "<requirement>" [--mode=<new|resume|status|cancel>]
 examples:
-  - /autopilot "Build a task management app with user authentication"
-  - /autopilot "Add dark mode toggle to the application"
-  - /autopilot --mode=resume
-  - /autopilot --mode=status
+  - /foreman "Build a task management app with user authentication"
+  - /foreman "Add dark mode toggle to the application"
+  - /foreman --mode=resume
+  - /foreman --mode=status
 ---
 
-# /autopilot Command
+# /foreman Command
 
-## Description | 描述
+## Description
 
-Start the Autopilot autonomous development system. Transforms a single requirement into production-ready, tested code through a 5-phase workflow with zero manual intervention.
-
-启动 Autopilot 自主开发系统。通过 5 阶段工作流将单个需求转化为生产就绪的、经过测试的代码，零人工干预。
+Start the Foreman autonomous development system. Transforms a single requirement into production-ready, tested code through a 5-phase workflow with zero manual intervention.
 
 ---
 
-## Usage | 使用方法
+## Usage
 
-### Start New Session | 开始新会话
+### Start New Session
 
 ```bash
-/autopilot "<requirement>"
+/foreman "<requirement>"
 ```
 
 **Examples:**
 ```bash
-/autopilot "Build a task management app with user authentication"
-/autopilot "Add user profile page with avatar upload"
-/autopilot "Implement password reset via email"
-/autopilot "Create REST API for product catalog"
+/foreman "Build a task management app with user authentication"
+/foreman "Add user profile page with avatar upload"
+/foreman "Implement password reset via email"
+/foreman "Create REST API for product catalog"
 ```
 
-### Resume Session | 恢复会话
+### Resume Session
 
 ```bash
-/autopilot --mode=resume
+/foreman --mode=resume
 # or
-/autopilot resume
+/foreman resume
 ```
 
-Resumes the last autopilot session from where it stopped.
+Resumes the last foreman session from where it stopped.
 
-### Check Status | 检查状态
+### Check Status
 
 ```bash
-/autopilot --mode=status
+/foreman --mode=status
 # or
-/autopilot status
+/foreman status
 ```
 
-Shows current autopilot session status and progress.
+Shows current foreman session status and progress.
 
-### Cancel Session | 取消会话
+### Cancel Session
 
 ```bash
-/autopilot --mode=cancel
+/foreman --mode=cancel
 # or
-/autopilot cancel
+/foreman cancel
 ```
 
-Cancels the current autopilot session and archives the workspace.
+Cancels the current foreman session and archives the workspace.
 
 ---
 
-## Parameters | 参数
+## Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -76,11 +74,11 @@ Cancels the current autopilot session and archives the workspace.
 
 ---
 
-## Workflow | 工作流程
+## Workflow
 
-When you run `/autopilot "<requirement>"`, the system executes 5 phases:
+When you run `/foreman "<requirement>"`, the system executes 5 phases:
 
-### Phase 1: CLARIFY (Interactive) | 澄清阶段（交互式）
+### Phase 1: CLARIFY (Interactive)
 
 🤔 **Asks 3-5 structured questions** to understand requirements:
 
@@ -96,7 +94,7 @@ Your choice: _
 
 After all questions answered → Generates **Product Requirements Document (PRD)**
 
-### Phase 2: BREAKDOWN (Autonomous) | 分解阶段（自主）
+### Phase 2: BREAKDOWN (Autonomous)
 
 📋 **Breaks down into atomic tasks** (max 30 min each):
 
@@ -114,7 +112,7 @@ Approve? (yes/no/modify)
 
 **User approves** → Proceeds to implementation
 
-### Phase 3: IMPLEMENT (Autonomous Loop) | 实现阶段（自主循环）
+### Phase 3: IMPLEMENT (Autonomous Loop)
 
 ⚡ **Implements each task with TDD**:
 
@@ -136,7 +134,7 @@ Approve? (yes/no/modify)
    🔧 Auto-fixes: 3 errors healed
 ```
 
-### Phase 4: HEAL (On-Demand) | 修复阶段（按需）
+### Phase 4: HEAL (On-Demand)
 
 🔧 **Auto-fixes errors** using WebSearch:
 
@@ -146,7 +144,7 @@ Approve? (yes/no/modify)
 - Continues if successful
 - Max 3 retry attempts
 
-### Phase 5: DELIVER (Final Verification) | 交付阶段（最终验证）
+### Phase 5: DELIVER (Final Verification)
 
 🚀 **Quality gates and delivery**:
 
@@ -163,12 +161,12 @@ Approve? (yes/no/modify)
 🚀 DELIVERY COMPLETE
    Commit: abc123f "feat: Add task management"
    PR: #123 (ready for review)
-   URL: github.com/mylukin/autopilot/pull/123
+   URL: github.com/mylukin/foreman/pull/123
 ```
 
 ---
 
-## Expected Output | 预期输出
+## Expected Output
 
 ### Successful Completion
 
@@ -181,7 +179,7 @@ Approve? (yes/no/modify)
 │ Commit:      abc123f "feat: Add feature"    │
 │ Branch:      feature/task-management        │
 │ PR:          #456 (ready for review)        │
-│ URL:         github.com/mylukin/autopilot/pull/456  │
+│ URL:         github.com/mylukin/foreman/pull/456  │
 ├──────────────────────────────────────────────┤
 │ 📊 Statistics                                │
 ├──────────────────────────────────────────────┤
@@ -193,17 +191,17 @@ Approve? (yes/no/modify)
 └──────────────────────────────────────────────┘
 
 Next steps:
-1. Review PR: github.com/mylukin/autopilot/pull/456
+1. Review PR: github.com/mylukin/foreman/pull/456
 2. Merge when approved
 3. Deploy to production
 
-Thank you for using Autopilot! 🎉
+Thank you for using Foreman! 🎉
 ```
 
 ### Status Output
 
 ```markdown
-📊 Autopilot Status
+📊 Foreman Status
 
 Phase:    implement (3/5)
 Progress: 9/15 tasks completed (60%)
@@ -221,13 +219,13 @@ Auto-fixes: 3 errors healed
 
 ---
 
-## Implementation | 实现
+## Implementation
 
-This command delegates to the `autopilot-orchestrator` skill:
+This command delegates to the `foreman-orchestrator` skill:
 
 ```markdown
 Use Skill tool to invoke:
-  skill: "autopilot-orchestrator"
+  skill: "foreman-orchestrator"
   args: "<user-requirement>"
 ```
 
@@ -241,12 +239,12 @@ The orchestrator skill handles:
 
 ---
 
-## Files Created | 创建的文件
+## Files Created
 
-During execution, Autopilot creates these files in `.autopilot/`:
+During execution, Foreman creates these files in `.foreman/`:
 
 ```
-.autopilot/
+.foreman/
 ├── state.json              # Current phase and progress
 ├── prd.md                  # Product Requirements Document
 ├── tasks/                  # Modular task storage
@@ -261,7 +259,7 @@ During execution, Autopilot creates these files in `.autopilot/`:
 
 ---
 
-## Error Handling | 错误处理
+## Error Handling
 
 | Situation | Behavior |
 |-----------|----------|
@@ -273,9 +271,9 @@ During execution, Autopilot creates these files in `.autopilot/`:
 
 ---
 
-## Configuration | 配置
+## Configuration
 
-Autopilot respects these settings in `.autopilot/tasks/index.json`:
+Foreman respects these settings in `.foreman/tasks/index.json`:
 
 ```json
 {
@@ -291,7 +289,7 @@ Autopilot respects these settings in `.autopilot/tasks/index.json`:
 
 ---
 
-## Tips | 提示
+## Tips
 
 ### Writing Good Requirements
 
@@ -302,10 +300,10 @@ Autopilot respects these settings in `.autopilot/tasks/index.json`:
 
 ❌ **Bad:**
 - "Make it better" (too vague)
-- "Fix the bug" (use debugging tools, not autopilot)
+- "Fix the bug" (use debugging tools, not foreman)
 - "Refactor everything" (too broad, specify what to refactor)
 
-### When to Use Autopilot
+### When to Use Foreman
 
 ✅ **Use when:**
 - Building new features
@@ -324,14 +322,14 @@ Autopilot respects these settings in `.autopilot/tasks/index.json`:
 If interrupted (network issue, timeout, etc.), simply run:
 
 ```bash
-/autopilot resume
+/foreman resume
 ```
 
-Autopilot will continue from the last saved state.
+Foreman will continue from the last saved state.
 
 ---
 
-## See Also | 相关命令
+## See Also
 
 - `/detect-language` - AI language detection
 - `/systematic-debugging` - Debug existing code
@@ -340,15 +338,15 @@ Autopilot will continue from the last saved state.
 
 ---
 
-## Examples | 示例
+## Examples
 
 ### Example 1: New Web App
 
 ```bash
-User: /autopilot "Build a blog platform with markdown support and comments"
+User: /foreman "Build a blog platform with markdown support and comments"
 
-Autopilot:
-🚀 Starting Autopilot...
+Foreman:
+🚀 Starting Foreman...
 Phase 1/5: Clarifying requirements...
 
 Question 1/5: What type of frontend?
@@ -376,10 +374,10 @@ Phase 3/5: Implementing tasks...
 ### Example 2: Add Feature to Existing Project
 
 ```bash
-User: /autopilot "Add user profile page with avatar upload and bio editing"
+User: /foreman "Add user profile page with avatar upload and bio editing"
 
-Autopilot:
-🚀 Starting Autopilot...
+Foreman:
+🚀 Starting Foreman...
 
 Phase 0/5: Detecting project configuration...
 ✅ Detected: TypeScript + React + Vite
@@ -391,11 +389,11 @@ Phase 1/5: Clarifying requirements...
 ### Example 3: Resume Interrupted Session
 
 ```bash
-User: /autopilot resume
+User: /foreman resume
 
-Autopilot:
+Foreman:
 ┌────────────────────────────────────┐
-│ 🚀 AUTOPILOT SESSION RESUMED       │
+│ 🚀 FOREMAN SESSION RESUMED       │
 ├────────────────────────────────────┤
 │ Phase:    implement (3/5)          │
 │ Progress: 9/15 tasks               │

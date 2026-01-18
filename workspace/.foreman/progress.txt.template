@@ -1,4 +1,4 @@
-# Autopilot Progress
+# Foreman Progress
 
 Session: {DATE}
 Goal: {PROJECT_GOAL}
@@ -20,7 +20,7 @@ Total: 35 | Done: 2 | Failed: 0 | Healed: 1 | Progress: 6%
 - Zod schemas reusable for API validation
 
 ## Next
-Run: autopilot-cli tasks next
+Run: foreman-cli tasks next
 
 ---
 For details, see git log.

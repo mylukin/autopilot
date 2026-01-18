@@ -7,21 +7,21 @@ user-invocable: false
 
 # Phase 1: Clarify Requirements
 
-## Overview | 概述
+## Overview
 
 Interactively clarify user requirements through structured questions, then generate a comprehensive Product Requirements Document (PRD).
 
 通过结构化问题交互式澄清用户需求，然后生成全面的产品需求文档 (PRD)。
 
-## When to Use | 何时使用
+## When to Use
 
-Invoked by autopilot-orchestrator as Phase 1 of the autonomous development workflow.
+Invoked by foreman-orchestrator as Phase 1 of the autonomous development workflow.
 
-## Input | 输入
+## Input
 
 Receives the raw user requirement string from the orchestrator.
 
-## Execution | 执行
+## Execution
 
 ### Step 1: Analyze Requirement
 
@@ -190,23 +190,23 @@ Save the generated PRD to workspace:
 
 ```bash
 # Ensure workspace directory exists
-mkdir -p .autopilot
+mkdir -p .foreman
 
 # Save PRD
-cat > .autopilot/prd.md <<'EOF'
+cat > .foreman/prd.md <<'EOF'
 {GENERATED_PRD_CONTENT}
 EOF
 
-echo "✅ PRD saved to .autopilot/prd.md"
+echo "✅ PRD saved to .foreman/prd.md"
 ```
 
 ### Step 6: Update State
 
-Update autopilot state to indicate Phase 1 complete:
+Update foreman state to indicate Phase 1 complete:
 
 ```bash
 # Update state to breakdown phase
-autopilot-cli state update --phase breakdown
+skillstore-foreman state update --phase breakdown
 
 echo "✅ Phase 1 (Clarify) complete"
 ```
@@ -219,7 +219,7 @@ Return structured result to orchestrator:
 ---PHASE RESULT---
 phase: clarify
 status: complete
-prd_file: .autopilot/prd.md
+prd_file: .foreman/prd.md
 next_phase: breakdown
 summary: |
   Generated PRD with {N} user stories across {M} epics.
@@ -229,7 +229,7 @@ summary: |
 ---END PHASE RESULT---
 ```
 
-## Error Handling | 错误处理
+## Error Handling
 
 | Error | Action |
 |-------|--------|
@@ -238,7 +238,7 @@ summary: |
 | PRD generation fails | Use fallback template-based PRD |
 | Workspace directory creation fails | Try alternative path or fail gracefully |
 
-## Example Output | 示例输出
+## Example Output
 
 **User Requirement**: "Build a task management app with user authentication"
 
@@ -278,16 +278,16 @@ A task management web application that allows users to create, organize, and tra
 ...
 ```
 
-## Rules | 规则
+## Rules
 
 1. **Ask minimum 3, maximum 5 questions** - Keep it concise
 2. **Use AskUserQuestion tool** - Don't ask questions in plain text
 3. **Generate comprehensive PRD** - Include all necessary sections
-4. **Save to .autopilot/prd.md** - Standard location
+4. **Save to .foreman/prd.md** - Standard location
 5. **Update state** - Always update to next phase
 6. **Return structured result** - Use YAML format
 
-## Notes | 注意事项
+## Notes
 
 - Questions should be tailored to the user requirement
 - PRD should be detailed enough for task breakdown

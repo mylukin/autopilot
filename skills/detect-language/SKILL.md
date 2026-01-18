@@ -1,32 +1,32 @@
 ---
 name: detect-language
-description: Autonomous language and framework detection for any programming language. Use when user asks to "detect language", "what language is this project", or when initializing autopilot for a new project.
+description: Autonomous language and framework detection for any programming language. Use when user asks to "detect language", "what language is this project", or when initializing foreman for a new project.
 allowed-tools: [Read, Glob, Bash, Task]
 user-invocable: true
 ---
 
 # Language Detection Skill
 
-## Overview | 概述
+## Overview
 
 Autonomously detect the programming language, framework, build tools, and verification commands for ANY project.
 
 自主检测任何项目的编程语言、框架、构建工具和验证命令。
 
-## When to Use | 何时使用
+## When to Use
 
 - User asks: "What language is this project?"
 - User asks: "Detect my project configuration"
-- Initializing autopilot for a new project
+- Initializing foreman for a new project
 - User runs: `/detect-language`
 
-## Execution | 执行
+## Execution
 
 ### Step 0: Initialize CLI (Automatic)
 
-**IMPORTANT:** This skill requires the Autopilot CLI. It will build automatically on first use.
+**IMPORTANT:** This skill requires the Foreman CLI. It will build automatically on first use.
 
-> **重要：**此技能需要 Autopilot CLI。首次使用时将自动构建。
+> **重要：**此技能需要 Foreman CLI。首次使用时将自动构建。
 
 ```bash
 # Bootstrap CLI - runs automatically, builds if needed
@@ -66,7 +66,7 @@ find . -maxdepth 2 -type f \( -name 'package.json' -o -name '*.toml' -o -name '*
 
 # Count source files by extension
 for ext in ts js tsx jsx py go rs java rb php cs cpp c swift kt kts scala; do
-  count=\$(find . -name \"*.\$ext\" -type f 2>/dev/null | wc -l | tr -d ' ')
+  count=\$(find . -name \"*.\$ext\" -type f 2>/dev/null | wc -l
   if [ \$count -gt 0 ]; then
     echo \"\$ext: \$count files\"
   fi
@@ -181,7 +181,7 @@ IMPORTANT: Output ONLY the JSON, no additional text before or after.
 "
 ```
 
-## Post-Processing | 后处理
+## Post-Processing
 
 After the agent returns the JSON result:
 
@@ -192,7 +192,7 @@ After the agent returns the JSON result:
    RESULT='<json-output-from-agent>'
 
    # Save using CLI
-   autopilot-cli detect-ai-save "$RESULT"
+   skillstore-foreman detect-ai-save "$RESULT"
    ```
 3. **Display to user**:
    ```markdown
@@ -210,7 +210,7 @@ After the agent returns the JSON result:
    4. npm run build
    ```
 
-## Example Invocation | 调用示例
+## Example Invocation
 
 ```markdown
 User: /detect-language

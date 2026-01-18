@@ -1,11 +1,16 @@
 {
-  "name": "@autopilot/cli",
+  "name": "@skillstore/foreman",
   "version": "2.1.0",
-  "description": "CLI tool for Autopilot - efficient operations for AI agents",
+  "description": "CLI tool for Foreman - efficient operations for AI agents",
   "main": "dist/index.js",
   "bin": {
-    "autopilot-cli": "./bin/autopilot-cli.js"
+    "skillstore-foreman": "./bin/skillstore-foreman.js"
   },
+  "files": [
+    "dist",
+    "bin",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
@@ -13,17 +18,30 @@
     "test": "vitest",
     "test:watch": "vitest --watch",
     "lint": "eslint src --ext .ts",
-    "format": "prettier --write 'src/**/*.ts'"
+    "format": "prettier --write 'src/**/*.ts'",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
-    "autopilot",
+    "foreman",
     "cli",
     "ai-agent",
     "task-management",
-    "multi-language"
+    "multi-language",
+    "claude-code",
+    "automation",
+    "development-tools"
   ],
   "author": "Lukin",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mylukin/foreman.git",
+    "directory": "cli"
+  },
+  "homepage": "https://github.com/mylukin/foreman#readme",
+  "bugs": {
+    "url": "https://github.com/mylukin/foreman/issues"
+  },
   "dependencies": {
     "commander": "^11.1.0",
     "chalk": "^5.3.0",

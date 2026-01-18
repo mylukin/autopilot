@@ -7,29 +7,29 @@ user-invocable: false
 
 # Phase 3: Implementation Loop
 
-## Overview | 概述
+## Overview
 
 Autonomously implement all tasks using TDD workflow, spawning fresh agents for each task, with automatic error recovery through Phase 4 healing.
 
 使用 TDD 工作流自主实现所有任务，为每个任务生成新的 agent，通过 Phase 4 自愈进行自动错误恢复。
 
-## When to Use | 何时使用
+## When to Use
 
-Invoked by autopilot-orchestrator as Phase 3, after Phase 2 (Breakdown) completes and user approves task plan.
+Invoked by foreman-orchestrator as Phase 3, after Phase 2 (Breakdown) completes and user approves task plan.
 
-## Input | 输入
+## Input
 
-- Tasks directory: `.autopilot/tasks/`
-- Task index: `.autopilot/tasks/index.json`
+- Tasks directory: `.foreman/tasks/`
+- Task index: `.foreman/tasks/index.json`
 - Language config from index metadata
 
-## Execution | 执行
+## Execution
 
 ### Step 0: Initialize CLI (Automatic)
 
-**IMPORTANT:** This skill requires the Autopilot CLI. It will build automatically on first use.
+**IMPORTANT:** This skill requires the Foreman CLI. It will build automatically on first use.
 
-> **重要：**此技能需要 Autopilot CLI。首次使用时将自动构建。
+> **重要：**此技能需要 Foreman CLI。首次使用时将自动构建。
 
 ```bash
 # Bootstrap CLI - runs automatically, builds if needed
@@ -46,7 +46,7 @@ echo ""
 
 ```bash
 # Get total task count from index
-TOTAL_TASKS=$(autopilot-cli tasks list --json | jq 'length')
+TOTAL_TASKS=$(skillstore-foreman tasks list --json
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🚀 Starting implementation of $TOTAL_TASKS tasks..."
@@ -87,12 +87,12 @@ while true; do
   # ═══════════════════════════════════════════
   # STEP 1: Get next pending task
   # ═══════════════════════════════════════════
-  TASK_JSON=$(autopilot-cli tasks next --json 2>/dev/null)
+  TASK_JSON=$(skillstore-foreman tasks next --json 2>/dev/null)
 
   # ═══════════════════════════════════════════
   # STEP 2: Check if loop should exit
   # ═══════════════════════════════════════════
-  if [ -z "$TASK_JSON" ] || echo "$TASK_JSON" | jq -e '.error' > /dev/null; then
+  if [ -z "$TASK_JSON" ] || echo "$TASK_JSON"
     # No more tasks from CLI - VERIFY before exiting
 
     echo ""
@@ -101,10 +101,10 @@ while true; do
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
     # Count tasks by status
-    PENDING_COUNT=$(autopilot-cli tasks list --status pending --json 2>/dev/null | jq 'length')
-    IN_PROGRESS_COUNT=$(autopilot-cli tasks list --status in_progress --json 2>/dev/null | jq 'length')
-    ACTUAL_COMPLETED=$(autopilot-cli tasks list --status completed --json 2>/dev/null | jq 'length')
-    ACTUAL_FAILED=$(autopilot-cli tasks list --status failed --json 2>/dev/null | jq 'length')
+    PENDING_COUNT=$(skillstore-foreman tasks list --status pending --json 2>/dev/null
+    IN_PROGRESS_COUNT=$(skillstore-foreman tasks list --status in_progress --json 2>/dev/null
+    ACTUAL_COMPLETED=$(skillstore-foreman tasks list --status completed --json 2>/dev/null
+    ACTUAL_FAILED=$(skillstore-foreman tasks list --status failed --json 2>/dev/null
 
     # Calculate totals
     ACCOUNTED_FOR=$((ACTUAL_COMPLETED + ACTUAL_FAILED))
@@ -126,7 +126,7 @@ while true; do
       echo "   But CLI returned no next task. This is a bug."
       echo ""
       echo "Pending tasks:"
-      autopilot-cli tasks list --status pending
+      skillstore-foreman tasks list --status pending
       echo ""
       echo "CANNOT proceed to Phase 5. Fix required."
       exit 1
@@ -137,7 +137,7 @@ while true; do
       echo "   These tasks are stuck. This is a bug."
       echo ""
       echo "In-progress tasks:"
-      autopilot-cli tasks list --status in_progress
+      skillstore-foreman tasks list --status in_progress
       echo ""
       echo "CANNOT proceed to Phase 5. Fix required."
       exit 1
@@ -166,10 +166,10 @@ while true; do
   # ═══════════════════════════════════════════
 
   # Extract task details from enhanced next output
-  TASK_ID=$(echo "$TASK_JSON" | jq -r '.task.id')
-  TASK_DESC=$(echo "$TASK_JSON" | jq -r '.task.description')
-  TASK_PRIORITY=$(echo "$TASK_JSON" | jq -r '.task.priority')
-  TASK_EST_MIN=$(echo "$TASK_JSON" | jq -r '.task.estimatedMinutes')
+  TASK_ID=$(echo "$TASK_JSON"
+  TASK_DESC=$(echo "$TASK_JSON"
+  TASK_PRIORITY=$(echo "$TASK_JSON"
+  TASK_EST_MIN=$(echo "$TASK_JSON"
 
   echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -180,7 +180,7 @@ while true; do
   echo ""
 
   # Mark task as started
-  autopilot-cli tasks start "$TASK_ID"
+  skillstore-foreman tasks start "$TASK_ID"
 
   # Record start time
   START_TIME=$(date +%s)
@@ -216,7 +216,7 @@ while true; do
   if [ "$IMPLEMENTATION_SUCCESS" = true ]; then
     # Task succeeded
     COMPLETED_COUNT=$((COMPLETED_COUNT + 1))
-    autopilot-cli tasks done "$TASK_ID" --duration "$DURATION_STR"
+    skillstore-foreman tasks done "$TASK_ID" --duration "$DURATION_STR"
 
     echo "✅ $TASK_ID completed"
     echo "   Duration: $DURATION_STR"
@@ -236,14 +236,14 @@ while true; do
       # Healing succeeded
       COMPLETED_COUNT=$((COMPLETED_COUNT + 1))
       HEALED_COUNT=$((HEALED_COUNT + 1))
-      autopilot-cli tasks done "$TASK_ID" --duration "$DURATION_STR (healed)"
+      skillstore-foreman tasks done "$TASK_ID" --duration "$DURATION_STR (healed)"
 
       echo "✅ Auto-healed successfully!"
       echo ""
     else
       # Healing failed - mark as failed and continue
       FAILED_COUNT=$((FAILED_COUNT + 1))
-      autopilot-cli tasks fail "$TASK_ID" --reason "Implementation and healing failed"
+      skillstore-foreman tasks fail "$TASK_ID" --reason "Implementation and healing failed"
 
       echo "❌ Could not heal. Marked as failed."
       echo "   Will continue with remaining tasks."
@@ -293,8 +293,8 @@ done
 
 1. **Get task details from CLI:**
    ```bash
-   TASK_JSON=$(autopilot-cli tasks next --json)
-   TASK_ID=$(echo "$TASK_JSON" | jq -r '.id')
+   TASK_JSON=$(skillstore-foreman tasks next --json)
+   TASK_ID=$(echo "$TASK_JSON"
    ```
 
 2. **Build implementer prompt:**
@@ -338,7 +338,7 @@ done
 Use this exact template when spawning implementer agents:
 
 ```markdown
-You are an autonomous implementer agent for a single task in an autopilot workflow.
+You are an autonomous implementer agent for a single task in an foreman workflow.
 
 ## TASK INFORMATION
 
@@ -531,7 +531,7 @@ echo ""
 
 if [ $FAILED -gt 0 ]; then
   echo "⚠️  Some tasks failed. They are marked with status='failed'."
-  echo "   Review failed tasks in .autopilot/tasks/"
+  echo "   Review failed tasks in .foreman/tasks/"
   echo ""
 fi
 
@@ -542,7 +542,7 @@ echo "▶️  Next: Phase 5 (Deliver) - Quality gates and PR creation"
 
 ```bash
 # Update state to deliver phase
-autopilot-cli state update --phase deliver
+skillstore-foreman state update --phase deliver
 ```
 
 ### Step 7: Return Result
@@ -564,7 +564,7 @@ summary: |
 ---END PHASE RESULT---
 ```
 
-## Progress Updates | 进度更新
+## Progress Updates
 
 Show progress after each task:
 
@@ -591,7 +591,7 @@ For errors with healing:
 ✅ Healed successfully (1m 12s)
 ```
 
-## Implementer Agent Template | 实现者 Agent 模板
+## Implementer Agent Template
 
 When spawning implementer agents, use this prompt template:
 
@@ -702,7 +702,7 @@ When done, report:
 - Any issues encountered
 ```
 
-## Error Handling | 错误处理
+## Error Handling
 
 | Error | Action |
 |-------|--------|
@@ -712,7 +712,7 @@ When done, report:
 | All tasks fail | Continue to Phase 5, report failures |
 | User interrupts | Save state, allow resume |
 
-## Example Flow | 示例流程
+## Example Flow
 
 ```
 🚀 Starting implementation of 35 tasks...
@@ -758,7 +758,7 @@ When done, report:
 ▶️  Next: Phase 5 (Deliver)
 ```
 
-## Rules | 规则
+## Rules
 
 1. **Fresh agent per task** - Prevent context pollution
 2. **TDD workflow mandatory** - Tests before implementation
@@ -768,7 +768,7 @@ When done, report:
 6. **Never skip tasks** - Process in priority order
 7. **Save state continuously** - Can resume anytime
 
-## Notes | 注意事项
+## Notes
 
 - Implementation quality depends on clear acceptance criteria
 - Fresh agents ensure no context bleed between tasks

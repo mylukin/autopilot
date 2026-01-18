@@ -7,28 +7,28 @@ user-invocable: false
 
 # Phase 2: Task Breakdown
 
-## Overview | 概述
+## Overview
 
 Read the PRD and break it down into atomic tasks (each <30 minutes), create modular markdown files using CLI, and get user approval before proceeding to implementation.
 
 读取 PRD 并将其分解为原子任务（每个 <30 分钟），使用 CLI 创建模块化 markdown 文件，在继续实施前获得用户批准。
 
-## When to Use | 何时使用
+## When to Use
 
-Invoked by autopilot-orchestrator as Phase 2, after Phase 1 (Clarify) completes.
+Invoked by foreman-orchestrator as Phase 2, after Phase 1 (Clarify) completes.
 
-## Input | 输入
+## Input
 
-- PRD file location: `.autopilot/prd.md`
+- PRD file location: `.foreman/prd.md`
 - Current state from Phase 1
 
-## Execution | 执行
+## Execution
 
 ### Step 0: Initialize CLI (Automatic)
 
-**IMPORTANT:** This skill requires the Autopilot CLI. It will build automatically on first use.
+**IMPORTANT:** This skill requires the Foreman CLI. It will build automatically on first use.
 
-> **重要：**此技能需要 Autopilot CLI。首次使用时将自动构建。
+> **重要：**此技能需要 Foreman CLI。首次使用时将自动构建。
 
 ```bash
 # Bootstrap CLI - runs automatically, builds if needed
@@ -43,10 +43,10 @@ echo ""
 
 ```bash
 # Read the PRD generated in Phase 1
-PRD_CONTENT=$(cat .autopilot/prd.md)
+PRD_CONTENT=$(cat .foreman/prd.md)
 
 echo "📖 Reading PRD..."
-echo "PRD length: $(echo "$PRD_CONTENT" | wc -l) lines"
+echo "PRD length: $(echo "$PRD_CONTENT"
 ```
 
 ### Step 2: Extract User Stories and Requirements
@@ -86,11 +86,11 @@ For each user story or requirement, create 1-3 atomic tasks.
 
 ### Step 4: Create Task Files Using CLI
 
-For each task, create task files using the autopilot-cli:
+For each task, create task files using the skillstore-foreman:
 
 ```bash
 # Initialize tasks directory and index
-autopilot-cli tasks init \
+skillstore-foreman tasks init \
   --project-goal "$(extract_goal_from_prd)" \
   --language "typescript" \
   --framework "Next.js"
@@ -98,7 +98,7 @@ autopilot-cli tasks init \
 # Create each task using CLI
 # Example for auth.signup.ui:
 
-autopilot-cli tasks create \
+skillstore-foreman tasks create \
   --id "auth.signup.ui" \
   --module "auth" \
   --priority 1 \
@@ -115,8 +115,8 @@ autopilot-cli tasks create \
   --test-pattern "tests/auth/SignupForm.test.*"
 
 # CLI will:
-# 1. Create .autopilot/tasks/auth/signup.ui.md with proper frontmatter
-# 2. Update .autopilot/tasks/index.json automatically
+# 1. Create .foreman/tasks/auth/signup.ui.md with proper frontmatter
+# 2. Update .foreman/tasks/index.json automatically
 # 3. Show confirmation with file location
 
 # For each subsequent task, repeat the create command with different parameters
@@ -128,7 +128,7 @@ autopilot-cli tasks create \
    Module: auth
    Priority: 1
    Estimated: 20 min
-   Location: .autopilot/tasks/auth/signup.ui.md
+   Location: .foreman/tasks/auth/signup.ui.md
 ```
 
 **Helper function to extract goal from PRD:**
@@ -136,9 +136,9 @@ autopilot-cli tasks create \
 ```bash
 extract_goal_from_prd() {
   # Extract first paragraph under "## Project Overview"
-  sed -n '/## Project Overview/,/^##/p' .autopilot/prd.md | \
-    sed '1d;$d' | \
-    tr '\n' ' ' | \
+  sed -n '/## Project Overview/,/^##/p' .foreman/prd.md
+    sed '1d;$d'
+    tr '\n' ' '
     sed 's/  */ /g'
 }
 ```
@@ -219,7 +219,7 @@ Display the task plan in a readable format:
 Do you approve this task breakdown?
   A) Yes, proceed with implementation
   B) No, let me modify tasks manually
-  C) Cancel autopilot
+  C) Cancel foreman
 ```
 
 Use AskUserQuestion:
@@ -232,9 +232,9 @@ Use AskUserQuestion tool with:
     - label: "Yes, proceed"
       description: "Start implementing tasks as planned"
     - label: "Modify first"
-      description: "I'll edit tasks in .autopilot/tasks/ before proceeding"
+      description: "I'll edit tasks in .foreman/tasks/ before proceeding"
     - label: "Cancel"
-      description: "Stop autopilot here"
+      description: "Stop foreman here"
 ```
 
 ### Step 7: Handle User Response
@@ -245,18 +245,18 @@ USER_RESPONSE="$ANSWER"
 case "$USER_RESPONSE" in
   "Yes, proceed")
     echo "✅ Task breakdown approved"
-    autopilot-cli state update --phase implement
+    skillstore-foreman state update --phase implement
     ;;
   "Modify first")
     echo "⏸️  Paused for manual task editing"
-    echo "📝 Edit files in: .autopilot/tasks/"
-    echo "▶️  Resume with: /autopilot resume"
-    autopilot-cli state update --phase breakdown
+    echo "📝 Edit files in: .foreman/tasks/"
+    echo "▶️  Resume with: /foreman resume"
+    skillstore-foreman state update --phase breakdown
     exit 0
     ;;
   "Cancel")
-    echo "❌ Autopilot cancelled by user"
-    autopilot-cli state clear
+    echo "❌ Foreman cancelled by user"
+    skillstore-foreman state clear
     exit 1
     ;;
 esac
@@ -271,7 +271,7 @@ Return structured result to orchestrator:
 phase: breakdown
 status: complete
 tasks_created: {N}
-tasks_dir: .autopilot/tasks
+tasks_dir: .foreman/tasks
 estimated_hours: {X}
 next_phase: implement
 summary: |
@@ -282,7 +282,7 @@ summary: |
 ---END PHASE RESULT---
 ```
 
-## Task File Format | 任务文件格式
+## Task File Format
 
 Each task file follows this structure:
 
@@ -320,7 +320,7 @@ testRequirements:
 {Any additional context or implementation notes}
 ```
 
-## Error Handling | 错误处理
+## Error Handling
 
 | Error | Action |
 |-------|--------|
@@ -329,18 +329,18 @@ testRequirements:
 | User rejects plan | Save state, allow manual editing |
 | Index.json creation fails | Try alternative format or location |
 
-## Example Output | 示例输出
+## Example Output
 
 **Input PRD**: Task management app with auth
 
 **Output**:
-- 35 tasks created in `.autopilot/tasks/`
+- 35 tasks created in `.foreman/tasks/`
 - Modules: setup (4), auth (10), tasks (16), deployment (5)
 - Estimated time: 8.5 hours
 - Priority order: 1-35
 - All tasks have acceptance criteria and test requirements
 
-## Rules | 规则
+## Rules
 
 1. **Each task <30 minutes** - Break down larger features
 2. **Clear acceptance criteria** - Must be testable
@@ -350,7 +350,7 @@ testRequirements:
 6. **Use CLI when available** - For task management
 7. **Create modular files** - One file per task
 
-## Notes | 注意事项
+## Notes
 
 - Task breakdown quality determines implementation success
 - Include setup and deployment tasks, not just features

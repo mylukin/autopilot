@@ -1,16 +1,14 @@
-# Autopilot - Autonomous AI Development System
+# Foreman - Autonomous AI Development System
 
 **Version:** 2.1.0
 **Status:** Implementation Ready
 **License:** MIT
 
-## Overview | 概述
+## Overview
 
-Autopilot is an autonomous end-to-end development system for Claude Code that transforms a simple requirement into production-ready, tested code with minimal human intervention.
+Foreman is an autonomous end-to-end development system for Claude Code that transforms a simple requirement into production-ready, tested code with minimal human intervention.
 
-Autopilot 是一个用于 Claude Code 的自主端到端开发系统，能够将简单的需求转化为生产就绪的、经过测试的代码，只需最少的人工干预。
-
-**Key Features | 核心功能：**
+**Key Features:**
 
 - 🌍 **Multi-Language Support** - Native support for 12 programming languages
 - 🤖 **AI Language Detection** - Autonomous detection for ANY programming language (not just templates)
@@ -22,7 +20,7 @@ Autopilot 是一个用于 Claude Code 的自主端到端开发系统，能够将
 - 🚀 **Automatic Delivery** - Creates commits and pull requests automatically
 - ⚙️ **Hybrid Architecture** - Skills for intelligence + TypeScript CLI for efficiency (10x faster)
 
-### Supported Languages | 支持的语言
+### Supported Languages
 
 | Language | Config Detection | Quality Gates | Framework Detection | Status |
 |----------|------------------|---------------|---------------------|--------|
@@ -40,45 +38,35 @@ Autopilot 是一个用于 Claude Code 的自主端到端开发系统，能够将
 | **Scala** | build.sbt | test, compile | sbt, ScalaTest | ✅ **Fully Supported** |
 | **C++** | CMakeLists.txt, Makefile | cmake/make, test | CMake, Make, CTest | ✅ **Fully Supported** |
 
-> **12 种语言完全支持**，包括类型检查、代码检查、测试和构建的自动化质量门禁。
+## Quick Start
 
-## Quick Start | 快速开始
+**Current Status:**
+- ✅ Architecture & CLI complete
+- ✅ Plugin configuration ready
+- ✅ All 5 core phase skills implemented
+- ✅ 100% Implementation Complete!
+- ⏳ Ready for Alpha Testing
 
-**✅ Current Status | 当前状态**:
-- ✅ Architecture & CLI complete (架构和 CLI 完成)
-- ✅ Plugin configuration ready (插件配置就绪)
-- ✅ All 5 core phase skills implemented (所有 5 个核心 phase skills 已实现)
-- ✅ 100% Implementation Complete! (100% 实现完成！)
-- ⏳ Ready for Alpha Testing (准备 Alpha 测试)
-
-**👉 [查看完整安装和开发指南 | See Full Setup Guide →](NEXT_STEPS.md)**
-
-### Installation | 安装
+### Installation
 
 ```bash
 # Clone or symlink to Claude Code plugins directory
-git clone https://github.com/mylukin/autopilot ~/.claude/plugins/autopilot
+git clone https://github.com/mylukin/foreman ~/.claude/plugins/foreman
 
 # Or if you want to develop locally:
-ln -s $(pwd) ~/.claude/plugins/autopilot
+ln -s $(pwd) ~/.claude/plugins/foreman
 
 # That's it! No build step needed.
-# The CLI will build automatically when you first use autopilot.
+# The CLI will build automatically when you first use foreman.
 ```
 
-**✨ Auto-Bootstrap Feature:**
+**Auto-Bootstrap Feature:**
 - ✅ No manual build step required
 - ✅ CLI builds automatically on first use (~15-30 seconds one-time)
 - ✅ Subsequent uses are instant
 - ✅ Requires: Node.js >= 18.0.0, npm >= 9.0.0
 
-> **自动引导功能：**
-> - 无需手动构建步骤
-> - 首次使用时 CLI 自动构建（一次性15-30秒）
-> - 后续使用即时
-> - 需要：Node.js >= 18.0.0，npm >= 9.0.0
-
-### Usage | 使用
+### Usage
 
 ```bash
 # In Claude Code conversation:
@@ -86,27 +74,21 @@ ln -s $(pwd) ~/.claude/plugins/autopilot
 # Optional: Detect project language first (supports ANY language!)
 /detect-language
 
-# Then run autopilot
-/autopilot "Build a task management app with user authentication"
+# Then run foreman
+/foreman "Build a task management app with user authentication"
 ```
 
-**That's it!** Autopilot will:
+**That's it!** Foreman will:
 1. Ask 3-5 clarifying questions → Answer with A, B, C, or D
 2. Generate task breakdown → Approve the plan
 3. Implement autonomously → Watch real-time progress
 4. Deliver PR → Review and merge
 
-**就这样！** Autopilot 将会：
-1. 提出 3-5 个澄清问题 → 用 A、B、C 或 D 回答
-2. 生成任务分解 → 批准计划
-3. 自主实现 → 观察实时进度
-4. 交付 PR → 审查并合并
-
-## Architecture | 架构
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    AUTOPILOT SYSTEM                      │
+│                    FOREMAN SYSTEM                      │
 └─────────────────────────────────────────────────────────┘
 
 Phase 1: CLARIFY      Phase 2: BREAKDOWN    Phase 3: IMPLEMENT
@@ -120,16 +102,12 @@ Phase 4: HEAL         Phase 5: DELIVER
   Auto-fix errors  →  Verify + Commit + PR
 ```
 
-### Project Structure | 项目结构
+### Project Structure
 
 ```
-autopilot/
+foreman/
 ├── README.md                          # This file
-├── docs/
-│   ├── IMPLEMENTATION_GUIDE.md        # Step-by-step implementation
-│   ├── ARCHITECTURE.md                # V2 architecture (multi-language)
-│   ├── PSEUDOCODE.md                  # Algorithms in pseudocode
-│   └── QUICKSTART.md                  # 30-minute quick start
+├── README_ZH.md                       # Chinese documentation
 │
 ├── cli/                               # TypeScript CLI tool (10x faster)
 │   ├── src/
@@ -144,7 +122,7 @@ autopilot/
 │   └── marketplace.json               # Marketplace listing
 │
 ├── skills/                            # Core workflow skills
-│   ├── autopilot-orchestrator/        # Main entry point (uses CLI)
+│   ├── foreman-orchestrator/          # Main entry point (uses CLI)
 │   ├── phase-1-clarify/               # Requirements clarification
 │   ├── phase-2-breakdown/             # Task decomposition (uses CLI)
 │   ├── phase-3-implement/             # Implementation loop (uses CLI)
@@ -152,38 +130,31 @@ autopilot/
 │   └── phase-5-deliver/               # Delivery & verification (uses CLI)
 │
 ├── commands/
-│   └── autopilot.md                   # User entry: /autopilot
+│   └── foreman.md                     # User entry: /foreman
 │
-├── workspace/                         # Example workspace
-│   └── ai/
-│       ├── tasks/                     # Modular task storage (agent-foreman style)
-│       │   ├── index.json            # Task index
-│       │   ├── setup/scaffold.md     # Example task
-│       │   ├── auth/login.ui.md      # Example task
-│       │   └── ...
-│       ├── state.json                 # Current phase and progress
-│       └── prd.md                     # Product requirements
+├── agents/
+│   └── language-detector.md           # Language detection agent
 │
-└── examples/                          # Example projects
-    ├── task-manager/                  # Full example
-    └── simple-api/                    # Minimal example
+├── shared/
+│   ├── bootstrap-cli.sh               # Auto-bootstrap script
+│   └── README.md                      # Bootstrap documentation
+│
+└── workspace/                         # Example workspace
+    └── .foreman/
+        ├── tasks/                     # Modular task storage (agent-foreman style)
+        │   ├── index.json             # Task index
+        │   ├── setup/scaffold.md      # Example task
+        │   ├── auth/login.ui.md       # Example task
+        │   └── ...
+        ├── state.json                 # Current phase and progress
+        └── prd.md                     # Product requirements
 ```
 
-## Documentation | 文档
+## How It Works
 
-| Document | Description | 中文描述 |
-|----------|-------------|---------|
-| [Implementation Guide](docs/IMPLEMENTATION_GUIDE.md) | Step-by-step build instructions | 分步构建说明 |
-| [Architecture](docs/ARCHITECTURE.md) | V2 system design (multi-language) | V2 系统设计（多语言）|
-| [AI Language Detection](docs/AI_LANGUAGE_DETECTION.md) | AI-powered language detection | AI 语言检测 |
-| [Pseudocode](docs/PSEUDOCODE.md) | Core algorithms | 核心算法 |
-| [Usage Guide](USAGE_AI_DETECTION.md) | How to use AI detection | AI 检测使用指南 |
+### 1. Clarification Phase
 
-## How It Works | 工作原理
-
-### 1. Clarification Phase | 澄清阶段
-
-Autopilot asks structured questions with lettered options:
+Foreman asks structured questions with lettered options:
 
 ```
 🤔 Question 1/5: What type of application?
@@ -195,7 +166,7 @@ Autopilot asks structured questions with lettered options:
 Your choice: _
 ```
 
-### 2. Breakdown Phase | 分解阶段
+### 2. Breakdown Phase
 
 Generates atomic tasks (max 30 min each) in modular markdown files:
 
@@ -221,9 +192,9 @@ testRequirements:
 4. Unit tests pass (coverage >80%)
 ```
 
-Tasks are stored in `.autopilot/tasks/{module}/{name}.md` with a lightweight `index.json` for fast lookups.
+Tasks are stored in `.foreman/tasks/{module}/{name}.md` with a lightweight `index.json` for fast lookups.
 
-### 3. Implementation Phase | 实现阶段
+### 3. Implementation Phase
 
 Executes tasks with TDD workflow:
 
@@ -238,7 +209,7 @@ Executes tasks with TDD workflow:
    Next: auth.login.api
 ```
 
-### 4. Healing Phase | 修复阶段
+### 4. Healing Phase
 
 Auto-fixes errors using WebSearch:
 
@@ -251,7 +222,7 @@ Auto-fixes errors using WebSearch:
 ✅ Healed successfully
 ```
 
-### 5. Delivery Phase | 交付阶段
+### 5. Delivery Phase
 
 Creates commit and PR with quality gates:
 
@@ -270,7 +241,7 @@ Creates commit and PR with quality gates:
    PR: #123 (ready for review)
 ```
 
-## Performance Metrics | 性能指标
+## Performance Metrics
 
 Based on internal testing:
 
@@ -282,7 +253,7 @@ Based on internal testing:
 | Test coverage | >80% | 85% |
 | PR approval rate | >70% | 78% |
 
-## Key Design Principles | 核心设计原则
+## Key Design Principles
 
 1. **Multi-Language First** - Auto-detect project language and adapt verification
 2. **Hybrid Architecture** - Skills for decisions, CLI for fast operations (10x speedup)
@@ -296,9 +267,9 @@ Based on internal testing:
 10. **State Persistence** - Resume from any interruption
 11. **Scalable Storage** - Modular task files (agent-foreman pattern)
 
-## Comparison | 对比
+## Comparison
 
-| Feature | Manual Coding | Copilot/Cursor | **Autopilot** |
+| Feature | Manual Coding | Copilot/Cursor | **Foreman** |
 |---------|---------------|----------------|---------------|
 | Requirement clarification | Manual | Manual | ✅ Automated |
 | Task breakdown | Manual | Manual | ✅ Automated |
@@ -308,11 +279,9 @@ Based on internal testing:
 | PR creation | Manual | Manual | ✅ Automatic |
 | Success rate | ~60% | ~70% | **~94%** |
 
-## CLI Auto-Bootstrap | CLI 自动引导
+## CLI Auto-Bootstrap
 
-Autopilot uses a centralized TypeScript CLI for high-performance operations (task management, state tracking, language detection). The CLI builds automatically when needed:
-
-> Autopilot 使用集中式 TypeScript CLI 进行高性能操作（任务管理、状态跟踪、语言检测）。CLI 在需要时自动构建：
+Foreman uses a centralized TypeScript CLI for high-performance operations (task management, state tracking, language detection). The CLI builds automatically when needed:
 
 **How it works:**
 1. Skills automatically source `shared/bootstrap-cli.sh`
@@ -329,32 +298,28 @@ Autopilot uses a centralized TypeScript CLI for high-performance operations (tas
 
 **See:** `shared/README.md` for technical details
 
-> **优势：**用户无需手动设置，TypeScript CLI 比 bash 快 8-10 倍，类型安全，易于维护，构建失败时有优雅降级。
-
 ---
 
-## Inspired By | 灵感来源
+## Inspired By
 
 - **ralph-ryan** - Fresh context pattern, interactive PRD generation
 - **superpowers** - TDD Iron Law, systematic debugging, verification
 - **agent-foreman** - Task management CLI, workflow enforcement
 
-## License | 许可证
+## License
 
 MIT License - see [LICENSE](LICENSE) file
 
-## Contributing | 贡献
+## Contributing
 
-See [CONTRIBUTING.md](docs/CONTRIBUTING.md)
+Contributions welcome! Please feel free to submit pull requests.
 
-## Support | 支持
+## Support
 
-- 📖 Documentation: [docs/](docs/)
-- 🐛 Issues: [GitHub Issues](https://github.com/mylukin/autopilot/issues)
-- 💬 Discussions: [GitHub Discussions](https://github.com/mylukin/autopilot/discussions)
+- 📖 Documentation: See skill files in `skills/` directory
+- 🐛 Issues: [GitHub Issues](https://github.com/mylukin/foreman/issues)
+- 💬 Discussions: [GitHub Discussions](https://github.com/mylukin/foreman/discussions)
 
 ---
 
 **Built with ❤️ for the Claude Code community**
-
-**用 ❤️ 为 Claude Code 社区构建**

@@ -13,21 +13,21 @@ interface State {
 }
 
 export function registerStateCommands(program: Command, workspaceDir: string): void {
-  const stateFile = path.join(workspaceDir, '.autopilot', 'state.json');
+  const stateFile = path.join(workspaceDir, '.foreman', 'state.json');
 
-  const state = program.command('state').description('Manage autopilot state');
+  const state = program.command('state').description('Manage foreman state');
 
   // Get current state
   state
     .command('get')
-    .description('Get current autopilot state')
+    .description('Get current foreman state')
     .option('--json', 'Output as JSON')
     .action((options) => {
       if (!fs.existsSync(stateFile)) {
         if (options.json) {
           console.log(JSON.stringify({ phase: 'none' }, null, 2));
         } else {
-          console.log(chalk.yellow('No active autopilot session'));
+          console.log(chalk.yellow('No active foreman session'));
         }
         return;
       }
@@ -50,7 +50,7 @@ export function registerStateCommands(program: Command, workspaceDir: string): v
   // Set state
   state
     .command('set')
-    .description('Set autopilot state')
+    .description('Set foreman state')
     .requiredOption('-p, --phase <phase>', 'Current phase')
     .option('-t, --task <taskId>', 'Current task ID')
     .action((options) => {
@@ -108,7 +108,7 @@ export function registerStateCommands(program: Command, workspaceDir: string): v
   // Clear state
   state
     .command('clear')
-    .description('Clear autopilot state')
+    .description('Clear foreman state')
     .action(() => {
       if (fs.existsSync(stateFile)) {
         fs.removeSync(stateFile);

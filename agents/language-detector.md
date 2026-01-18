@@ -7,13 +7,11 @@ trigger: none
 
 # Language Detector Agent
 
-## Mission | 使命
+## Mission
 
 Autonomously detect the programming language, framework, build tools, and verification commands for ANY project, regardless of language.
 
-自主检测任何项目的编程语言、框架、构建工具和验证命令，无论使用何种语言。
-
-## Detection Strategy | 检测策略
+## Detection Strategy
 
 ### Phase 1: Project Scan (File Discovery)
 
@@ -46,7 +44,7 @@ For each language, suggest:
 - Test command
 - Build command
 
-## Language Detection Rules | 语言检测规则
+## Language Detection Rules
 
 ### TypeScript/JavaScript
 
@@ -267,7 +265,7 @@ sbt compile               # Build
 sbt scalafmt              # Format check
 ```
 
-## Output Format | 输出格式
+## Output Format
 
 Return a JSON object with this structure:
 
@@ -302,7 +300,7 @@ Return a JSON object with this structure:
 }
 ```
 
-## Execution Steps | 执行步骤
+## Execution Steps
 
 ### Step 1: Scan Project
 
@@ -357,7 +355,7 @@ Based on the evidence:
 
 Output JSON in the format shown above.
 
-## Example Execution | 执行示例
+## Example Execution
 
 ```markdown
 🔍 Scanning project structure...
@@ -387,10 +385,10 @@ Source files:
 3. pnpm test              # Vitest
 4. pnpm run build         # Vite build
 
-💾 Saving configuration to .autopilot/tasks/index.json...
+💾 Saving configuration to .foreman/tasks/index.json...
 ```
 
-## Edge Cases | 边缘情况
+## Edge Cases
 
 ### Monorepo Detection
 
@@ -458,7 +456,7 @@ If no recognized build system:
 }
 ```
 
-## Rules | 规则
+## Rules
 
 1. **Always scan first** - Don't assume, always look at actual files
 2. **Use evidence** - Base conclusions on concrete file presence and content
@@ -467,16 +465,16 @@ If no recognized build system:
 5. **Practical commands** - Suggest commands that actually work
 6. **No hallucination** - Only suggest tools/commands if evidence exists
 
-## Integration with CLI | 与 CLI 集成
+## Integration with CLI
 
 This agent is invoked by:
 
 ```bash
-autopilot-cli detect --ai
+skillstore-foreman detect --ai
 ```
 
 The CLI will:
 1. Spawn this agent
 2. Agent performs detection
 3. Returns JSON result
-4. CLI saves to `.autopilot/tasks/index.json` metadata
+4. CLI saves to `.foreman/tasks/index.json` metadata

@@ -1,15 +1,15 @@
 ---
-name: autopilot-orchestrator
+name: foreman-orchestrator
 description: Autonomous end-to-end development from requirement to delivery. Use when user wants complete automation, "build X for me", or full feature implementation without manual steps.
 allowed-tools: [Task, Read, Write, Bash]
 user-invocable: true
 ---
 
-# Autopilot Orchestrator
+# Foreman Orchestrator
 
 ## Overview
 
-You are the autopilot system orchestrator. Your mission: Transform a user requirement into delivered, tested, production-ready code with ZERO manual intervention after initial clarification.
+You are the foreman system orchestrator. Your mission: Transform a user requirement into delivered, tested, production-ready code with ZERO manual intervention after initial clarification.
 
 ## Workflow Phases
 
@@ -23,7 +23,7 @@ You are the autopilot system orchestrator. Your mission: Transform a user requir
 
 ## State Management
 
-All state persists in `.autopilot/`:
+All state persists in `.foreman/`:
 - `state.json` - Current phase, progress, errors (managed by CLI)
 - `prd.md` - Product requirements document
 - `tasks/` - Modular task storage (agent-foreman style)
@@ -40,16 +40,16 @@ All state persists in `.autopilot/`:
 cd $PROJECT_ROOT
 
 # Detect project language and save configuration
-autopilot-cli detect --save
+skillstore-foreman detect --save
 
 # Initialize state to clarify phase
-autopilot-cli state set --phase clarify
+skillstore-foreman state set --phase clarify
 ```
 
 ### Phase 1: CLARIFY (Interactive)
 
 ```markdown
-🚀 Starting Autopilot...
+🚀 Starting Foreman...
 
 Requirement: $USER_REQUIREMENT
 Mode: Full autonomous development
@@ -68,7 +68,7 @@ Use the Task tool to invoke:
 Execute requirement clarification:
 1. Ask 3-5 structured questions with lettered options (A, B, C, D)
 2. Generate detailed PRD from answers
-3. Save to .claude/autopilot/prd.md
+3. Save to .claude/foreman/prd.md
 4. Return completion signal"
   context: fork
 ```
@@ -80,14 +80,14 @@ Execute requirement clarification:
 ---PHASE RESULT---
 phase: clarify
 status: complete
-output_file: .claude/autopilot/prd.md
+output_file: .claude/foreman/prd.md
 next_phase: breakdown
 ---END PHASE RESULT---
 ```
 
 **Update state:**
 ```bash
-autopilot-cli state update --phase breakdown
+skillstore-foreman state update --phase breakdown
 ```
 
 ### Phase 2: BREAKDOWN (Autonomous)
@@ -98,7 +98,7 @@ Phase 2/5: Breaking down into tasks...
 
 Read PRD:
 ```bash
-PRD=$(cat .autopilot/prd.md)
+PRD=$(cat .foreman/prd.md)
 ```
 
 Delegate to `phase-2-breakdown` skill:
@@ -112,8 +112,8 @@ $PRD
 Execute task breakdown:
 1. Extract user stories from PRD
 2. Convert each story to 1-3 atomic tasks (max 30 min each)
-3. Use CLI to create tasks: autopilot-cli tasks create
-4. CLI will create modular markdown files in .autopilot/tasks/
+3. Use CLI to create tasks: skillstore-foreman tasks create
+4. CLI will create modular markdown files in .foreman/tasks/
 5. Assign dependencies and priorities
 6. Return task summary"
   context: fork
@@ -135,16 +135,16 @@ Approve? (yes/no/modify)
 **Handle user response:**
 - `yes` → Proceed to Phase 3
 - `no` → Exit with "Plan rejected by user"
-- `modify` → Wait for user to edit `.claude/autopilot/tasks.json`, then proceed
+- `modify` → Wait for user to edit `.claude/foreman/tasks.json`, then proceed
 
 **Update state:**
 ```bash
 # Get task count from CLI
-TASK_LIST=$(autopilot-cli tasks list --json)
-TOTAL_TASKS=$(echo "$TASK_LIST" | jq 'length')
+TASK_LIST=$(skillstore-foreman tasks list --json)
+TOTAL_TASKS=$(echo "$TASK_LIST"
 
 # Update state using CLI
-autopilot-cli state update --phase implement
+skillstore-foreman state update --phase implement
 ```
 
 ### Phase 3: IMPLEMENT (Autonomous Loop)
@@ -158,16 +158,16 @@ Delegate to `phase-3-implement` skill (which handles Phase 4 healing internally)
 ```
 Use the Task tool to invoke:
   subagent_type: "phase-3-implement"
-  prompt: "Use autopilot-cli to manage tasks
+  prompt: "Use skillstore-foreman to manage tasks
 
 Execute implementation loop:
-1. Get next task: autopilot-cli tasks next --json
+1. Get next task: skillstore-foreman tasks next --json
 2. For each pending task:
-   a. Mark as started: autopilot-cli tasks start <task_id>
+   a. Mark as started: skillstore-foreman tasks start <task_id>
    b. Spawn implementer agent (fresh context)
    c. If error → spawn debugger agent (auto-heal)
-   d. Mark complete: autopilot-cli tasks done <task_id> --duration '4m 32s'
-   e. Or mark failed: autopilot-cli tasks fail <task_id> --reason 'error message'
+   d. Mark complete: skillstore-foreman tasks done <task_id> --duration '4m 32s'
+   e. Or mark failed: skillstore-foreman tasks fail <task_id> --reason 'error message'
    f. Show progress update
 3. Continue until all tasks processed
 4. Return summary"
@@ -206,7 +206,7 @@ next_phase: deliver
 
 **Update state:**
 ```bash
-autopilot-cli state update --phase deliver
+skillstore-foreman state update --phase deliver
 ```
 
 ### Phase 5: DELIVER (Final Verification)
@@ -220,10 +220,10 @@ Delegate to `phase-5-deliver` skill:
 ```
 Use the Task tool to invoke:
   subagent_type: "phase-5-deliver"
-  prompt: "Get state: autopilot-cli state get --json
+  prompt: "Get state: skillstore-foreman state get --json
 
 Execute delivery workflow:
-1. Get language config: autopilot-cli detect --json
+1. Get language config: skillstore-foreman detect --json
 2. Run quality gates using language-specific commands:
    - Run verification commands from languageConfig.verifyCommands
    - Example for TypeScript: npx tsc --noEmit, npm run lint, npm test, npm run build
@@ -252,7 +252,7 @@ phase: deliver
 status: success
 commit_hash: abc123f
 pr_number: 456
-pr_url: https://github.com/mylukin/autopilot/pull/456
+pr_url: https://github.com/mylukin/foreman/pull/456
 stats:
   completed: 15
   total: 15
@@ -274,7 +274,7 @@ stats:
 │ Commit:      abc123f "feat: Add feature"    │
 │ Branch:      feature/task-management        │
 │ PR:          #456 (ready for review)        │
-│ URL:         github.com/mylukin/autopilot/pull/456  │
+│ URL:         github.com/mylukin/foreman/pull/456  │
 ├──────────────────────────────────────────────┤
 │ 📊 Statistics                                │
 ├──────────────────────────────────────────────┤
@@ -286,17 +286,17 @@ stats:
 └──────────────────────────────────────────────┘
 
 Next steps:
-1. Review PR: github.com/mylukin/autopilot/pull/456
+1. Review PR: github.com/mylukin/foreman/pull/456
 2. Merge when approved
 3. Deploy to production
 
-Thank you for using Autopilot! 🎉
+Thank you for using Foreman! 🎉
 ```
 
 **Archive session:**
 ```bash
 # Clear state
-autopilot-cli state clear
+skillstore-foreman state clear
 
 # Archive workspace
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
@@ -314,19 +314,19 @@ cp -r workspace workspace-archive/$TIMESTAMP
 
 ## Resume Mode
 
-When user runs `/autopilot resume`:
+When user runs `/foreman resume`:
 
-1. Load state using CLI: `autopilot-cli state get --json`
+1. Load state using CLI: `skillstore-foreman state get --json`
 2. Check current phase
 3. Resume from current phase:
    - `clarify` → Continue with remaining questions
    - `breakdown` → Show plan again for approval
-   - `implement` → Get next task: `autopilot-cli tasks next`
+   - `implement` → Get next task: `skillstore-foreman tasks next`
    - `deliver` → Re-run delivery
 
 ```markdown
 ┌────────────────────────────────────┐
-│ 🚀 AUTOPILOT SESSION RESUMED       │
+│ 🚀 FOREMAN SESSION RESUMED       │
 ├────────────────────────────────────┤
 │ Phase:    $PHASE                   │
 │ Progress: $COMPLETED/$TOTAL tasks  │
@@ -338,24 +338,24 @@ When user runs `/autopilot resume`:
 
 ## Status Mode
 
-When user runs `/autopilot status`:
+When user runs `/foreman status`:
 
 ```bash
 # Get state from CLI
-autopilot-cli state get
+skillstore-foreman state get
 
 # Get task list
-autopilot-cli tasks list --status completed
-autopilot-cli tasks list --status pending
+skillstore-foreman tasks list --status completed
+skillstore-foreman tasks list --status pending
 ```
 
 ## Cancel Mode
 
-When user runs `/autopilot cancel`:
+When user runs `/foreman cancel`:
 
 ```bash
 # Clear state using CLI
-autopilot-cli state clear
+skillstore-foreman state clear
 
 # Archive workspace
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)

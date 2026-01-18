@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Autopilot CLI Fallback Functions
+# Foreman CLI Fallback Functions
 # Provides basic task operations when the TypeScript CLI is unavailable
 #
 # Usage:

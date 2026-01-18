@@ -5,16 +5,17 @@ import { registerStateCommands } from './commands/state';
 import { registerTaskCommands } from './commands/tasks';
 import { registerDetectCommand } from './commands/detect';
 import { registerDetectAICommand } from './commands/detect-ai';
+import { version } from '../package.json';
 
 const program = new Command();
 
 // Get workspace directory (default to current directory)
-const workspaceDir = process.env.AUTOPILOT_WORKSPACE || process.cwd();
+const workspaceDir = process.env.FOREMAN_WORKSPACE || process.cwd();
 
 program
-  .name('autopilot-cli')
-  .description('CLI tool for Autopilot - efficient operations for AI agents')
-  .version('1.0.0');
+  .name('skillstore-foreman')
+  .description('CLI tool for Foreman - efficient operations for AI agents')
+  .version(version);
 
 // Register command groups
 registerStateCommands(program, workspaceDir);

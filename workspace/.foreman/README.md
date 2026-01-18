@@ -1,6 +1,6 @@
-# Autopilot Workspace
+# Foreman Workspace
 
-This directory contains AI-generated artifacts from the Autopilot plugin for Claude Code.
+This directory contains AI-generated artifacts from the Foreman plugin for Claude Code.
 
 ## Structure
 
@@ -12,7 +12,7 @@ This directory contains AI-generated artifacts from the Autopilot plugin for Cla
 
 ## Safe to Delete?
 
-Yes, but you'll lose session progress. Autopilot will start fresh next time.
+Yes, but you'll lose session progress. Foreman will start fresh next time.
 
 ## Resuming Work on Different Machine
 
@@ -21,4 +21,4 @@ Don't commit `state.json` or log files.
 
 ## Multi-Session Note
 
-Only one active autopilot session per directory is supported in the current version.
+Only one active foreman session per directory is supported in the current version.

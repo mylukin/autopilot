@@ -1,14 +1,14 @@
-# Autopilot - 自主 AI 开发系统
+# Foreman - 自主 AI 开发系统
 
-**版本**: 2.0.0  
-**状态**: 架构完成，核心功能开发中  
+**版本**: 2.1.0
+**状态**: 100% 实现完成
 **许可**: MIT
 
 ---
 
 ## 项目概述
 
-Autopilot 是一个用于 Claude Code 的自主端到端开发系统，能够将简单的需求转化为生产就绪的、经过测试的代码，只需最少的人工干预。
+Foreman 是一个用于 Claude Code 的自主端到端开发系统，能够将简单的需求转化为生产就绪的、经过测试的代码，只需最少的人工干预。
 
 ### 核心功能
 
@@ -51,16 +51,16 @@ Autopilot 是一个用于 Claude Code 的自主端到端开发系统，能够将
 
 2. **安装插件** (5分钟)
    ```bash
-   ln -s $(pwd) ~/.claude/plugins/autopilot
+   ln -s $(pwd) ~/.claude/plugins/foreman
    ```
 
 3. **测试基础功能** (10分钟)
    ```
-   /autopilot "Build a TODO app"
+   /foreman "Build a TODO app"
    /detect-language
    ```
 
-**详细步骤**: [NEXT_STEPS.md](NEXT_STEPS.md)
+**提示**: 首次使用时 CLI 将自动构建（一次性15-30秒）
 
 ---
 
@@ -89,10 +89,10 @@ Autopilot 是一个用于 Claude Code 的自主端到端开发系统，能够将
 ### 启动自主开发
 
 ```
-/autopilot "构建一个带用户认证的任务管理应用"
+/foreman "构建一个带用户认证的任务管理应用"
 ```
 
-Autopilot 会:
+Foreman 会:
 1. 提出 3-5 个澄清问题 → 用 A、B、C 或 D 回答
 2. 生成任务分解 → 批准计划
 3. 自主实现 → 观察实时进度
@@ -127,7 +127,7 @@ Phase 4: HEAL         Phase 5: DELIVER
 ## 项目结构
 
 ```
-autopilot/
+foreman/
 ├── cli/                               # TypeScript CLI 工具
 │   ├── src/
 │   │   ├── commands/                  # state, tasks, detect
@@ -136,7 +136,7 @@ autopilot/
 │   └── package.json
 │
 ├── skills/                            # 工作流 Skills
-│   ├── autopilot-orchestrator/        # 主编排器
+│   ├── foreman-orchestrator/        # 主编排器
 │   ├── detect-language/               # AI 语言检测
 │   ├── phase-1-clarify/               # ⏳ 待实现
 │   ├── phase-2-breakdown/             # ⏳ 待实现
@@ -148,14 +148,14 @@ autopilot/
 │   └── language-detector.md          # 语言检测 agent
 │
 ├── commands/
-│   └── autopilot.md                   # /autopilot 命令
+│   └── foreman.md                   # /foreman 命令
 │
 ├── .claude-plugin/
 │   ├── plugin.json                    # 插件配置
 │   └── marketplace.json               # 市场列表
 │
 └── workspace/                         # 示例工作区
-    └── ai/
+    └── .foreman/
         └── tasks/                     # 模块化任务存储
 ```
 
@@ -222,7 +222,7 @@ autopilot/
 
 ## 对比
 
-| 功能 | 手动编码 | Copilot/Cursor | **Autopilot** |
+| 功能 | 手动编码 | Copilot/Cursor | **Foreman** |
 |------|----------|----------------|---------------|
 | 需求澄清 | 手动 | 手动 | ✅ 自动化 |
 | 任务分解 | 手动 | 手动 | ✅ 自动化 |
@@ -257,8 +257,8 @@ MIT License - 查看 LICENSE 文件
 ## 支持
 
 - 📖 文档: [docs/](docs/)
-- 🐛 问题: [GitHub Issues](https://github.com/mylukin/autopilot/issues)
-- 💬 讨论: [GitHub Discussions](https://github.com/mylukin/autopilot/discussions)
+- 🐛 问题: [GitHub Issues](https://github.com/mylukin/foreman/issues)
+- 💬 讨论: [GitHub Discussions](https://github.com/mylukin/foreman/discussions)
 
 ---
 

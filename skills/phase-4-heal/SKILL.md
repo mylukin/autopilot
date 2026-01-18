@@ -7,17 +7,17 @@ user-invocable: false
 
 # Phase 4: Systematic Healing
 
-## Overview | 概述
+## Overview
 
 Systematically investigate and fix implementation errors using root cause analysis. NO FIXES WITHOUT INVESTIGATION FIRST.
 
 使用根本原因分析系统地调查和修复实现错误。未经调查不得进行修复。
 
-## When to Use | 何时使用
+## When to Use
 
 Invoked by phase-3-implement when a task implementation fails.
 
-## The Iron Law | 铁律
+## The Iron Law
 
 ```
 NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST
@@ -27,13 +27,13 @@ If you haven't completed Phase 1 (Root Cause Investigation), you CANNOT propose 
 
 > 如果你没有完成第 1 阶段（根本原因调查），你不能提出修复方案。
 
-## Input | 输入
+## Input
 
 - Task ID: `{task_id}`
 - Error message: `{error_msg}`
 - Error context: Stack trace, test output, or build logs
 
-## The Four Phases | 四个阶段
+## The Four Phases
 
 **MANDATORY**: Must complete each phase before proceeding to next.
 
@@ -46,8 +46,8 @@ echo "🔍 Phase 1: Root Cause Investigation"
 echo ""
 
 # Get task details
-TASK_JSON=$(autopilot-cli tasks get "$TASK_ID" --json)
-TASK_DESC=$(echo "$TASK_JSON" | jq -r '.description')
+TASK_JSON=$(skillstore-foreman tasks get "$TASK_ID" --json)
+TASK_DESC=$(echo "$TASK_JSON"
 
 echo "Task: $TASK_ID"
 echo "Description: $TASK_DESC"
@@ -76,7 +76,7 @@ echo "STEP 2: Reproduce Consistently"
 echo ""
 
 # Determine test command from task
-TEST_PATTERN=$(echo "$TASK_JSON" | jq -r '.testRequirements.unit.pattern // "**/*.test.*"')
+TEST_PATTERN=$(echo "$TASK_JSON"
 echo "Running: npm test -- $TEST_PATTERN"
 echo ""
 
@@ -124,7 +124,7 @@ if [ -n "$ERROR_FILE" ] && [ -n "$ERROR_LINE" ]; then
   echo "Error location: $ERROR_FILE:$ERROR_LINE"
   echo ""
   echo "Code context:"
-  sed -n "$((ERROR_LINE - 5)),$((ERROR_LINE + 5))p" "$ERROR_FILE" | cat -n
+  sed -n "$((ERROR_LINE - 5)),$((ERROR_LINE + 5))p" "$ERROR_FILE"
   echo ""
 
   # Trace backward
@@ -165,13 +165,13 @@ if [ -n "$WORKING_EXAMPLES" ]; then
   echo "STEP 2: Comparing working vs broken code..."
   echo ""
 
-  FIRST_EXAMPLE=$(echo "$WORKING_EXAMPLES" | head -1)
+  FIRST_EXAMPLE=$(echo "$WORKING_EXAMPLES"
   echo "Working example: $FIRST_EXAMPLE"
   echo "Broken code: $ERROR_FILE"
   echo ""
 
   echo "Key differences:"
-  diff -u "$FIRST_EXAMPLE" "$ERROR_FILE" | head -20
+  diff -u "$FIRST_EXAMPLE" "$ERROR_FILE"
   echo ""
 fi
 
@@ -180,7 +180,7 @@ echo "STEP 3: Checking dependencies..."
 echo ""
 
 # Extract module name from error
-MODULE_NAME=$(echo "$ERROR_MSG" | grep -oP "Module '.*?'" | sed "s/Module '//;s/'//")
+MODULE_NAME=$(echo "$ERROR_MSG" | grep -oP "Module '.*?'"
 
 if [ -n "$MODULE_NAME" ]; then
   echo "Missing module: $MODULE_NAME"
@@ -263,7 +263,7 @@ SEARCH_RESULTS='[
 ]'
 
 echo "Search results:"
-echo "$SEARCH_RESULTS" | jq -r '.[].title'
+echo "$SEARCH_RESULTS"
 echo ""
 
 echo "✓ Phase 3 Complete: Hypothesis formed and validated"
@@ -393,7 +393,7 @@ echo ""
 return 1
 ```
 
-## Helper Functions | 辅助函数
+## Helper Functions
 
 ```bash
 classify_error() {
@@ -429,13 +429,13 @@ build_search_query() {
   local ERROR_MSG=$2
   local TASK_JSON=$3
 
-  local LANGUAGE=$(echo "$TASK_JSON" | jq -r '.metadata.language // "TypeScript"')
-  local FRAMEWORK=$(echo "$TASK_JSON" | jq -r '.metadata.framework // "Node.js"')
+  local LANGUAGE=$(echo "$TASK_JSON"
+  local FRAMEWORK=$(echo "$TASK_JSON"
 
   case "$ERROR_TYPE" in
     missing_dependency)
       MODULE=$(echo "$ERROR_MSG" | grep -oP "(?<=Module ').*(?=' not found)" || \
-               echo "$ERROR_MSG" | grep -oP "(?<=Cannot find module ').*(?=')")
+               echo "$ERROR_MSG"
       echo "$LANGUAGE $FRAMEWORK install $MODULE dependency"
       ;;
     type_error)
@@ -457,19 +457,19 @@ build_search_query() {
 }
 
 extract_line_number() {
-  echo "$1" | grep -oP ":\d+" | tr -d ':' | head -1
+  echo "$1" | grep -oP ":\d+" | tr -d ':'
 }
 
 extract_file_path() {
-  echo "$1" | grep -oP "[a-zA-Z0-9_/-]+\.ts[x]?" | head -1
+  echo "$1" | grep -oP "[a-zA-Z0-9_/-]+\.ts[x]?"
 }
 
 extract_error_code() {
-  echo "$1" | grep -oP "\[TS\d+\]" | head -1
+  echo "$1" | grep -oP "\[TS\d+\]"
 }
 ```
 
-## Error Handling | 错误处理
+## Error Handling
 
 | Error | Action |
 |-------|--------|
@@ -478,7 +478,7 @@ extract_error_code() {
 | All 3 attempts fail | Mark task as failed, require manual intervention |
 | Hypothesis unclear | Return to Phase 1 with more investigation |
 
-## Rules | 规则
+## Rules
 
 1. **ALWAYS complete Phase 1** - No skipping root cause investigation
 2. **One fix at a time** - Don't apply multiple changes simultaneously
@@ -488,7 +488,7 @@ extract_error_code() {
 6. **Evidence required** - Show full test output for verification
 7. **No fixes without investigation** - Investigation MUST precede fixes
 
-## Progress Updates | 进度更新
+## Progress Updates
 
 ```
 🔍 Phase 1: Root Cause Investigation
@@ -523,7 +523,7 @@ extract_error_code() {
       Hypothesis: bcrypt module not installed
 ```
 
-## Notes | 注意事项
+## Notes
 
 - Systematic debugging is FASTER than random fixes
 - Each phase builds on previous phases - don't skip

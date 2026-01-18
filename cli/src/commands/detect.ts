@@ -40,7 +40,7 @@ export function registerDetectCommand(program: Command, workspaceDir: string): v
       }
 
       if (options.save) {
-        const tasksDir = path.join(workspaceDir, '.autopilot', 'tasks');
+        const tasksDir = path.join(workspaceDir, '.foreman', 'tasks');
         const indexManager = new IndexManager(tasksDir);
         indexManager.updateMetadata({ languageConfig });
         console.log(chalk.green('\n✓ Saved to index metadata'));

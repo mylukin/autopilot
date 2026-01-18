@@ -1,10 +1,10 @@
 {
-  "name": "Autopilot",
-  "displayName": "Autopilot - Autonomous Development",
-  "version": "2.0.0",
+  "name": "Foreman",
+  "displayName": "Foreman - Autonomous Development",
+  "version": "2.1.0",
   "publisher": "Lukin",
   "description": "Autonomous end-to-end development system that transforms requirements into production-ready code with zero manual intervention. Supports ANY programming language through AI detection.",
-  "longDescription": "# Autopilot - Autonomous AI Development System\n\n🚀 From requirement to delivery, fully autonomous.\n\n## Key Features\n\n- 🌍 **Multi-Language Support** - TypeScript, Python, Go, Rust, Java, Ruby, PHP, C#, Swift, and more\n- 🤖 **AI Language Detection** - Autonomous detection for ANY programming language\n- 🤔 **Interactive Clarification** - Structured questions to understand requirements\n- 📋 **Autonomous Task Breakdown** - Decomposes into atomic, testable tasks\n- ⚡ **Self-Healing Implementation** - Auto-fixes errors using WebSearch\n- ✅ **TDD Enforcement** - Test-Driven Development workflow\n- 🔍 **Two-Stage Code Review** - Spec compliance + code quality\n- 🚀 **Automatic Delivery** - Creates commits and pull requests\n\n## How It Works\n\n### 5-Phase Workflow\n\n1. **CLARIFY** - Interactive requirement clarification\n2. **BREAKDOWN** - Autonomous task decomposition\n3. **IMPLEMENT** - TDD-driven implementation with self-healing\n4. **HEAL** - Automatic error recovery (WebSearch powered)\n5. **DELIVER** - Quality gates, commit, and PR creation\n\n## Quick Start\n\n```bash\n# In Claude Code conversation:\n/autopilot \"Build a task management app with user authentication\"\n```\n\nThat's it! Autopilot will:\n1. Ask 3-5 clarifying questions\n2. Generate task breakdown for approval\n3. Implement autonomously with real-time progress\n4. Deliver PR ready for review\n\n## What Makes It Different\n\n| Feature | Manual Coding | Copilot/Cursor | **Autopilot** |\n|---------|---------------|----------------|---------------|\n| Requirement clarification | Manual | Manual | ✅ Automated |\n| Task breakdown | Manual | Manual | ✅ Automated |\n| TDD enforcement | Optional | Optional | ✅ Mandatory |\n| Error recovery | Manual | Manual | ✅ Auto-heal |\n| Code review | Manual | Manual | ✅ 2-stage auto |\n| PR creation | Manual | Manual | ✅ Automatic |\n| Success rate | ~60% | ~70% | **~94%** |\n\n## Language Support\n\n**Template Detection (Fast):**\n- TypeScript/JavaScript (React, Vue, Angular, Next.js)\n- Python (Django, Flask, FastAPI)\n- Go, Rust, Java\n\n**AI Detection (Unlimited):**\n- All above + Ruby, PHP, C#, C++, Swift, Kotlin, Scala, Elixir, Dart, and ANY language!\n\n## Commands\n\n- `/autopilot \"<requirement>\"` - Start autonomous development\n- `/detect-language` - AI-powered language detection\n\n## Performance Metrics\n\n- **Task completion rate**: >90%\n- **Auto-healing success**: >80%\n- **Time savings vs manual**: >50%\n- **Test coverage**: >80%\n- **PR approval rate**: >70%\n\n## Inspired By\n\n- **ralph-ryan** - Fresh context pattern, interactive PRD\n- **superpowers** - TDD Iron Law, systematic debugging\n- **agent-foreman** - Task management, workflow enforcement\n\n## Documentation\n\n- [Architecture](docs/ARCHITECTURE.md)\n- [AI Language Detection](docs/AI_LANGUAGE_DETECTION.md)\n- [Quick Start](docs/QUICKSTART.md)\n- [Implementation Guide](docs/IMPLEMENTATION_GUIDE.md)\n\n## License\n\nMIT License - see LICENSE file",
+  "longDescription": "# Foreman - Autonomous AI Development System\n\n🚀 From requirement to delivery, fully autonomous.\n\n## Key Features\n\n- 🌍 **Multi-Language Support** - TypeScript, Python, Go, Rust, Java, Ruby, PHP, C#, Swift, and more\n- 🤖 **AI Language Detection** - Autonomous detection for ANY programming language\n- 🤔 **Interactive Clarification** - Structured questions to understand requirements\n- 📋 **Autonomous Task Breakdown** - Decomposes into atomic, testable tasks\n- ⚡ **Self-Healing Implementation** - Auto-fixes errors using WebSearch\n- ✅ **TDD Enforcement** - Test-Driven Development workflow\n- 🔍 **Two-Stage Code Review** - Spec compliance + code quality\n- 🚀 **Automatic Delivery** - Creates commits and pull requests\n\n## How It Works\n\n### 5-Phase Workflow\n\n1. **CLARIFY** - Interactive requirement clarification\n2. **BREAKDOWN** - Autonomous task decomposition\n3. **IMPLEMENT** - TDD-driven implementation with self-healing\n4. **HEAL** - Automatic error recovery (WebSearch powered)\n5. **DELIVER** - Quality gates, commit, and PR creation\n\n## Quick Start\n\n```bash\n# In Claude Code conversation:\n/foreman \"Build a task management app with user authentication\"\n```\n\nThat's it! Foreman will:\n1. Ask 3-5 clarifying questions\n2. Generate task breakdown for approval\n3. Implement autonomously with real-time progress\n4. Deliver PR ready for review\n\n## What Makes It Different\n\n| Feature | Manual Coding | Copilot/Cursor | **Foreman** |\n|---------|---------------|----------------|---------------|\n| Requirement clarification | Manual | Manual | ✅ Automated |\n| Task breakdown | Manual | Manual | ✅ Automated |\n| TDD enforcement | Optional | Optional | ✅ Mandatory |\n| Error recovery | Manual | Manual | ✅ Auto-heal |\n| Code review | Manual | Manual | ✅ 2-stage auto |\n| PR creation | Manual | Manual | ✅ Automatic |\n| Success rate | ~60% | ~70% | **~94%** |\n\n## Language Support\n\n**Template Detection (Fast):**\n- TypeScript/JavaScript (React, Vue, Angular, Next.js)\n- Python (Django, Flask, FastAPI)\n- Go, Rust, Java\n\n**AI Detection (Unlimited):**\n- All above + Ruby, PHP, C#, C++, Swift, Kotlin, Scala, Elixir, Dart, and ANY language!\n\n## Commands\n\n- `/foreman \"<requirement>\"` - Start autonomous development\n- `/detect-language` - AI-powered language detection\n\n## Performance Metrics\n\n- **Task completion rate**: >90%\n- **Auto-healing success**: >80%\n- **Time savings vs manual**: >50%\n- **Test coverage**: >80%\n- **PR approval rate**: >70%\n\n## Inspired By\n\n- **ralph-ryan** - Fresh context pattern, interactive PRD\n- **superpowers** - TDD Iron Law, systematic debugging\n- **agent-foreman** - Task management, workflow enforcement\n\n## Documentation\n\n- [Architecture](docs/ARCHITECTURE.md)\n- [AI Language Detection](docs/AI_LANGUAGE_DETECTION.md)\n- [Quick Start](docs/QUICKSTART.md)\n- [Implementation Guide](docs/IMPLEMENTATION_GUIDE.md)\n\n## License\n\nMIT License - see LICENSE file",
   "categories": [
     "productivity",
     "code-generation",
@@ -13,7 +13,7 @@
     "automation"
   ],
   "tags": [
-    "autopilot",
+    "foreman",
     "autonomous",
     "ai-agent",
     "code-generation",
@@ -31,9 +31,9 @@
     "amount": 0
   },
   "support": {
-    "documentation": "https://github.com/mylukin/autopilot/blob/main/README.md",
-    "issues": "https://github.com/mylukin/autopilot/issues",
-    "discussions": "https://github.com/mylukin/autopilot/discussions"
+    "documentation": "https://github.com/mylukin/foreman/blob/main/README.md",
+    "issues": "https://github.com/mylukin/foreman/issues",
+    "discussions": "https://github.com/mylukin/foreman/discussions"
   },
   "changelog": {
     "2.0.0": {

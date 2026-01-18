@@ -8,7 +8,7 @@ import { TaskWriter } from '../core/task-writer';
 import { IndexManager } from '../core/index-manager';
 
 export function registerTaskCommands(program: Command, workspaceDir: string): void {
-  const tasksDir = path.join(workspaceDir, '.autopilot', 'tasks');
+  const tasksDir = path.join(workspaceDir, '.foreman', 'tasks');
   const indexManager = new IndexManager(tasksDir);
 
   const tasks = program.command('tasks').description('Manage tasks');
@@ -160,7 +160,7 @@ export function registerTaskCommands(program: Command, workspaceDir: string): vo
       }
 
       // 3. State context
-      const stateFile = path.join(workspaceDir, '.autopilot', 'state.json');
+      const stateFile = path.join(workspaceDir, '.foreman', 'state.json');
       if (fs.existsSync(stateFile)) {
         context.state = fs.readJSONSync(stateFile);
       }
@@ -184,7 +184,7 @@ export function registerTaskCommands(program: Command, workspaceDir: string): vo
       };
 
       // 5. Recent activity from progress.log
-      const progressLog = path.join(workspaceDir, '.autopilot', 'progress.log');
+      const progressLog = path.join(workspaceDir, '.foreman', 'progress.log');
       context.recentActivity = [];
       if (fs.existsSync(progressLog)) {
         try {

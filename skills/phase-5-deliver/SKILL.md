@@ -7,29 +7,29 @@ user-invocable: false
 
 # Phase 5: Deliver
 
-## Overview | 概述
+## Overview
 
 Run final quality gates, perform two-stage code review (spec compliance + code quality), create commits, and generate pull requests for completed work.
 
 运行最终质量检查，执行两阶段代码审查（规范合规性 + 代码质量），创建 commit 并为完成的工作生成 pull request。
 
-## When to Use | 何时使用
+## When to Use
 
-Invoked by autopilot-orchestrator as Phase 5, after Phase 3 (Implement) completes all tasks.
+Invoked by foreman-orchestrator as Phase 5, after Phase 3 (Implement) completes all tasks.
 
-## Input | 输入
+## Input
 
 - Completed tasks from Phase 3
-- Task directory: `.autopilot/tasks/`
+- Task directory: `.foreman/tasks/`
 - Implementation files: All modified/created files
 
-## Execution | 执行
+## Execution
 
 ### Step 0: Initialize CLI (Automatic)
 
-**IMPORTANT:** This skill requires the Autopilot CLI. It will build automatically on first use.
+**IMPORTANT:** This skill requires the Foreman CLI. It will build automatically on first use.
 
-> **重要：**此技能需要 Autopilot CLI。首次使用时将自动构建。
+> **重要：**此技能需要 Foreman CLI。首次使用时将自动构建。
 
 ```bash
 # Bootstrap CLI - runs automatically, builds if needed
@@ -47,14 +47,14 @@ echo "📊 Gathering implementation summary..."
 echo ""
 
 # Get all completed tasks
-COMPLETED_TASKS=$(autopilot-cli tasks list --status passing --json)
-TASK_COUNT=$(echo "$COMPLETED_TASKS" | jq 'length')
+COMPLETED_TASKS=$(skillstore-foreman tasks list --status passing --json)
+TASK_COUNT=$(echo "$COMPLETED_TASKS"
 
 echo "✅ Completed Tasks: $TASK_COUNT"
 echo ""
 
 # List task IDs and descriptions
-echo "$COMPLETED_TASKS" | jq -r '.[] | "  • \(.id) - \(.description)"'
+echo "$COMPLETED_TASKS" | jq -r '.[]
 echo ""
 ```
 
@@ -78,15 +78,15 @@ echo "🔧 Detecting Language Configuration..."
 echo ""
 
 # Read from index metadata (saved during Phase 2 or via detect --save)
-INDEX_JSON=$(autopilot-cli tasks list --json 2>/dev/null)
-LANGUAGE_CONFIG=$(echo "$INDEX_JSON" | jq -r '.metadata.languageConfig // empty')
+INDEX_JSON=$(skillstore-foreman tasks list --json 2>/dev/null)
+LANGUAGE_CONFIG=$(echo "$INDEX_JSON"
 
 # If no config found, run detection now
 if [ -z "$LANGUAGE_CONFIG" ] || [ "$LANGUAGE_CONFIG" = "null" ]; then
   echo "⚠️  No language config in index. Running detection..."
   echo ""
 
-  DETECT_OUTPUT=$(autopilot-cli detect --save --json 2>&1)
+  DETECT_OUTPUT=$(skillstore-foreman detect --save --json 2>&1)
   DETECT_STATUS=$?
 
   if [ $DETECT_STATUS -ne 0 ]; then
@@ -98,14 +98,14 @@ if [ -z "$LANGUAGE_CONFIG" ] || [ "$LANGUAGE_CONFIG" = "null" ]; then
   fi
 
   # Re-read from index after saving
-  INDEX_JSON=$(autopilot-cli tasks list --json 2>/dev/null)
-  LANGUAGE_CONFIG=$(echo "$INDEX_JSON" | jq -r '.metadata.languageConfig')
+  INDEX_JSON=$(skillstore-foreman tasks list --json 2>/dev/null)
+  LANGUAGE_CONFIG=$(echo "$INDEX_JSON"
 fi
 
 # Extract language and verify commands
-DETECTED_LANGUAGE=$(echo "$LANGUAGE_CONFIG" | jq -r '.language')
-FRAMEWORK=$(echo "$LANGUAGE_CONFIG" | jq -r '.framework // "N/A"')
-VERIFY_COMMANDS=$(echo "$LANGUAGE_CONFIG" | jq -r '.verifyCommands[]' 2>/dev/null)
+DETECTED_LANGUAGE=$(echo "$LANGUAGE_CONFIG"
+FRAMEWORK=$(echo "$LANGUAGE_CONFIG"
+VERIFY_COMMANDS=$(echo "$LANGUAGE_CONFIG"
 
 echo "✅ Language detected: $DETECTED_LANGUAGE"
 [ "$FRAMEWORK" != "N/A" ] && echo "   Framework: $FRAMEWORK"
@@ -116,7 +116,7 @@ if [ -z "$VERIFY_COMMANDS" ]; then
   echo "   Quality gates will be skipped."
   echo ""
 else
-  echo "$VERIFY_COMMANDS" | sed 's/^/   • /'
+  echo "$VERIFY_COMMANDS"
   echo ""
 fi
 
@@ -175,7 +175,7 @@ else
   echo "✅ All quality gates passed!"
   echo ""
   echo "Evidence verified above for $GATE_INDEX gate(s):"
-  echo "$VERIFY_COMMANDS" | sed 's/^/  • /' | sed 's/$/ ✓/'
+  echo "$VERIFY_COMMANDS" | sed 's/^/  • /'
   echo ""
 fi
 ```
@@ -292,12 +292,12 @@ if ! command -v gh &> /dev/null; then
 else
   # Check if we're on a feature branch
   CURRENT_BRANCH=$(git branch --show-current)
-  MAIN_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
+  MAIN_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD
 
   if [ "$CURRENT_BRANCH" = "$MAIN_BRANCH" ]; then
     echo "⚠️  Currently on main branch ($MAIN_BRANCH)"
     echo "   Create feature branch first:"
-    echo "   git checkout -b feature/autopilot-implementation"
+    echo "   git checkout -b feature/foreman-implementation"
     echo ""
   else
     # Generate PR description
@@ -358,7 +358,7 @@ echo "   • Spec compliance: $([ $SPEC_REVIEW_STATUS -eq 0 ] && echo '✓' || e
 echo "   • Code quality: $([ $QUALITY_REVIEW_STATUS -eq 0 ] && echo '✓' || echo '⚠️  with suggestions')"
 echo ""
 
-echo "🎉 Autopilot workflow complete!"
+echo "🎉 Foreman workflow complete!"
 echo ""
 ```
 
@@ -366,7 +366,7 @@ echo ""
 
 ```bash
 # Update state to complete
-autopilot-cli state update --phase complete
+skillstore-foreman state update --phase complete
 ```
 
 ### Step 8: Return Result
@@ -396,7 +396,7 @@ summary: |\
 ---END PHASE RESULT---
 ```
 
-## Helper Functions | 辅助函数
+## Helper Functions
 
 ### Perform Spec Compliance Check
 
@@ -410,8 +410,8 @@ perform_spec_compliance_check() {
   ISSUES_FOUND=false
 
   # For each completed task
-  echo "$COMPLETED_TASKS" | jq -c '.[]' | while read -r task; do
-    TASK_ID=$(echo "$task" | jq -r '.id')
+  echo "$COMPLETED_TASKS" | jq -c '.[]'
+    TASK_ID=$(echo "$task"
     echo "   Checking $TASK_ID..."
 
     # Read task file to get acceptance criteria
@@ -499,17 +499,17 @@ generate_detailed_commit_message() {
   local COMPLETED_TASKS=$1
 
   # Create conventional commit format with details
-  TASK_COUNT=$(echo "$COMPLETED_TASKS" | jq 'length')
+  TASK_COUNT=$(echo "$COMPLETED_TASKS"
 
   if [ "$TASK_COUNT" -eq 1 ]; then
     # Single task - detailed single commit
-    local TASK=$(echo "$COMPLETED_TASKS" | jq -r '.[0]')
-    local ID=$(echo "$TASK" | jq -r '.id')
-    local MODULE=$(echo "$TASK" | jq -r '.module')
-    local DESC=$(echo "$TASK" | jq -r '.description')
-    local DURATION=$(echo "$TASK" | jq -r '.duration // "unknown"')
-    local TEST_COUNT=$(echo "$TASK" | jq -r '.testResults.unit.passed // 0')
-    local COVERAGE=$(echo "$TASK" | jq -r '.testResults.unit.coverage // 0')
+    local TASK=$(echo "$COMPLETED_TASKS"
+    local ID=$(echo "$TASK"
+    local MODULE=$(echo "$TASK"
+    local DESC=$(echo "$TASK"
+    local DURATION=$(echo "$TASK"
+    local TEST_COUNT=$(echo "$TASK"
+    local COVERAGE=$(echo "$TASK"
 
     cat <<EOF
 feat($MODULE): $DESC
@@ -519,20 +519,20 @@ Duration: $DURATION
 Tests: $TEST_COUNT passed, ${COVERAGE}% coverage
 
 Acceptance criteria:
-$(echo "$TASK" | jq -r '.acceptanceCriteria[]' | sed 's/^/- /')
+$(echo "$TASK" | jq -r '.acceptanceCriteria[]'
 
 Files:
-$(git diff --cached --name-only | sed 's/^/- /')
+$(git diff --cached --name-only
 EOF
   else
     # Multiple tasks - batch commit
-    MODULES=$(echo "$COMPLETED_TASKS" | jq -r '.[].module' | sort -u | head -1)
+    MODULES=$(echo "$COMPLETED_TASKS" | jq -r '.[].module' | sort -u
 
     cat <<EOF
 feat($MODULES): implement $TASK_COUNT tasks
 
 Tasks completed:
-$(echo "$COMPLETED_TASKS" | jq -r '.[] | "- \(.id) (\(.duration // "N/A")): \(.description)"')
+$(echo "$COMPLETED_TASKS" | jq -r '.[]
 
 All tasks:
 - Acceptance criteria satisfied ✓
@@ -549,22 +549,22 @@ update_progress_txt() {
   local COMPLETED_TASKS=$1
   local COMMIT_SHA=$2
 
-  PROGRESS_FILE=".autopilot/progress.txt"
+  PROGRESS_FILE=".foreman/progress.txt"
 
   # Append completed tasks to progress file
-  echo "$COMPLETED_TASKS" | jq -r '.[] | "\(.status | ascii_upcase): \(.id) (\(.duration // "N/A")) - commit \($commit)"' \
+  echo "$COMPLETED_TASKS" | jq -r '.[] | "\(.status
     --arg commit "$COMMIT_SHA" >> "$PROGRESS_FILE"
 
   # Update stats line
-  TOTAL=$(autopilot-cli tasks list --json | jq 'length')
-  DONE=$(autopilot-cli tasks list --status completed --json | jq 'length')
-  FAILED=$(autopilot-cli tasks list --status failed --json | jq 'length')
+  TOTAL=$(skillstore-foreman tasks list --json
+  DONE=$(skillstore-foreman tasks list --status completed --json
+  FAILED=$(skillstore-foreman tasks list --status failed --json
   PROGRESS=$((DONE * 100 / TOTAL))
 
   # Update stats (replace last Stats: line)
   sed -i.bak "/^## Stats/,/^$/c\\
 ## Stats\\
-Total: $TOTAL | Done: $DONE | Failed: $FAILED | Progress: ${PROGRESS}%\\
+Total: $TOTAL | Done: $DONE | Failed: $FAILED
 " "$PROGRESS_FILE"
 
   echo "✓ Progress file updated: $PROGRESS_FILE"
@@ -577,15 +577,15 @@ Total: $TOTAL | Done: $DONE | Failed: $FAILED | Progress: ${PROGRESS}%\\
 generate_pr_title() {
   local COMPLETED_TASKS=$1
 
-  TASK_COUNT=$(echo "$COMPLETED_TASKS" | jq 'length')
+  TASK_COUNT=$(echo "$COMPLETED_TASKS"
 
   if [ "$TASK_COUNT" -eq 1 ]; then
     # Single task
-    echo "$(echo "$COMPLETED_TASKS" | jq -r '.[0].description')"
+    echo "$(echo "$COMPLETED_TASKS"
   else
     # Multiple tasks
-    MODULES=$(echo "$COMPLETED_TASKS" | jq -r '.[].module' | sort -u)
-    MODULE_COUNT=$(echo "$MODULES" | wc -l)
+    MODULES=$(echo "$COMPLETED_TASKS" | jq -r '.[].module'
+    MODULE_COUNT=$(echo "$MODULES"
     echo "Implement $TASK_COUNT features across $MODULE_COUNT modules"
   fi
 }
@@ -602,11 +602,11 @@ generate_pr_body() {
   cat <<EOF
 ## Summary
 
-Autopilot implementation of $TASK_COUNT tasks.
+Foreman implementation of $TASK_COUNT tasks.
 
 ## Implemented Tasks
 
-$(echo "$COMPLETED_TASKS" | jq -r '.[] | "- **\(.id)**: \(.description)"')
+$(echo "$COMPLETED_TASKS" | jq -r '.[]
 
 ## Quality Verification
 
@@ -629,7 +629,7 @@ fi)
 ## Test Plan
 
 All tasks include automated tests:
-$(echo "$COMPLETED_TASKS" | jq -r '.[] | "- \(.id): \(.testRequirements.unit.pattern // "tests/**/*.test.*")"')
+$(echo "$COMPLETED_TASKS" | jq -r '.[]
 
 Run tests: \`npm test\` (or project-specific command)
 
@@ -641,7 +641,7 @@ Run tests: \`npm test\` (or project-specific command)
 
 ---
 
-🤖 Generated with [Autopilot](https://github.com/mylukin/autopilot) for Claude Code
+🤖 Generated with [Foreman](https://github.com/mylukin/foreman) for Claude Code
 EOF
 }
 ```
@@ -653,8 +653,8 @@ extract_acceptance_criteria() {
   local TASK_FILE=$1
 
   # Extract criteria from markdown (after "## Acceptance Criteria" heading)
-  sed -n '/## Acceptance Criteria/,/## /p' "$TASK_FILE" | \
-    grep -E "^[0-9]+\." | \
+  sed -n '/## Acceptance Criteria/,/## /p' "$TASK_FILE"
+    grep -E "^[0-9]+\."
     sed 's/^[0-9]*\.\s*//'
 }
 ```
@@ -665,16 +665,16 @@ extract_acceptance_criteria() {
 find_task_file() {
   local TASK_ID=$1
 
-  # Convert task ID to file path (e.g., auth.login → .autopilot/tasks/auth/login.md)
-  MODULE=$(echo "$TASK_ID" | cut -d. -f1)
-  FILENAME=$(echo "$TASK_ID" | cut -d. -f2-).md
+  # Convert task ID to file path (e.g., auth.login → .foreman/tasks/auth/login.md)
+  MODULE=$(echo "$TASK_ID"
+  FILENAME=$(echo "$TASK_ID"
 
-  echo ".autopilot/tasks/$MODULE/$FILENAME"
+  echo ".foreman/tasks/$MODULE/$FILENAME"
 }
 ```
 
 
-## Error Handling | 错误处理
+## Error Handling
 
 | Error | Action |
 |-------|--------|
@@ -685,7 +685,7 @@ find_task_file() {
 | PR creation fails | Continue (manual PR creation fallback) |
 | gh CLI not found | Skip PR, show manual instructions |
 
-## Two-Stage Review Explained | 两阶段审查说明
+## Two-Stage Review Explained
 
 ### Stage 1: Spec Compliance Check
 **Question**: "Does the implementation satisfy the requirements?"
@@ -709,7 +709,7 @@ Checks:
 
 **Blocking**: No - suggestions are advisory, not mandatory
 
-## Output Examples | 输出示例
+## Output Examples
 
 ### Successful Delivery
 
@@ -732,7 +732,7 @@ Checks:
    • Spec compliance: ✓
    • Code quality: ⚠️  with suggestions
 
-🎉 Autopilot workflow complete!
+🎉 Foreman workflow complete!
 ```
 
 ### Delivery with Quality Gate Failure
@@ -749,7 +749,7 @@ Failed Gates:
 Fix these issues and re-run Phase 5.
 ```
 
-## Rules | 规则
+## Rules
 
 1. **Quality gates are blocking** - Cannot proceed if typecheck/lint/tests/build fail
 2. **Spec compliance is blocking** - Must satisfy all acceptance criteria
@@ -759,7 +759,7 @@ Fix these issues and re-run Phase 5.
 6. **Two-stage review mandatory** - Both stages must run
 7. **Test evidence required** - Must show actual test output, not assertions
 
-## Notes | 注意事项
+## Notes
 
 - Delivery only runs after all Phase 3 tasks complete
 - Quality gates ensure production-ready code

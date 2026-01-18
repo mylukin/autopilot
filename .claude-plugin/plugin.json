@@ -1,5 +1,5 @@
 {
-  "name": "autopilot",
+  "name": "foreman",
   "version": "2.1.0",
   "description": "Autonomous end-to-end development system - from requirement to production-ready code with zero manual intervention",
   "author": "Lukin",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/mylukin/autopilot"
+    "url": "https://github.com/mylukin/foreman"
   },
   "requirements": {
     "node": ">=18.0.0",
@@ -18,14 +18,14 @@
   },
   "lifecycle": {
     "install": {
-      "message": "🚀 Installing Autopilot plugin...\n\nℹ️  The CLI will build automatically when you first use autopilot.\n   If you want to build it now: cd ~/.claude/plugins/autopilot/cli && npm install && npm run build\n\n⏱️  First use build time: ~15-30 seconds (one-time)\n📦 Subsequent uses: Instant"
+      "message": "🚀 Installing Foreman plugin...\n\nℹ️  The CLI will build automatically when you first use foreman.\n   If you want to build it now: cd ~/.claude/plugins/foreman/cli && npm install && npm run build\n\n⏱️  First use build time: ~15-30 seconds (one-time)\n📦 Subsequent uses: Instant"
     },
     "postInstall": {
-      "message": "✅ Autopilot installed successfully!\n\n🚀 Quick start:\n  1. Optional: /detect-language (auto-detect project settings)\n  2. Run: /autopilot \"your requirement here\"\n\n📖 The CLI will build automatically on first use.\n   See: shared/README.md for details\n\n💡 Examples:\n   /autopilot \"Build a task management app with authentication\"\n   /autopilot \"Add user profile editing feature\"\n\n🔗 Documentation: https://github.com/mylukin/autopilot"
+      "message": "✅ Foreman installed successfully!\n\n🚀 Quick start:\n  1. Optional: /detect-language (auto-detect project settings)\n  2. Run: /foreman \"your requirement here\"\n\n📖 The CLI will build automatically on first use.\n   See: shared/README.md for details\n\n💡 Examples:\n   /foreman \"Build a task management app with authentication\"\n   /foreman \"Add user profile editing feature\"\n\n🔗 Documentation: https://github.com/mylukin/foreman"
     }
   },
   "keywords": [
-    "autopilot",
+    "foreman",
     "autonomous",
     "ai-agent",
     "code-generation",
@@ -62,10 +62,10 @@
   },
   "skills": [
     {
-      "name": "autopilot-orchestrator",
-      "path": "skills/autopilot-orchestrator/SKILL.md",
+      "name": "foreman-orchestrator",
+      "path": "skills/foreman-orchestrator/SKILL.md",
       "userInvocable": true,
-      "description": "Main autopilot orchestrator - 5-phase autonomous development workflow"
+      "description": "Main foreman orchestrator - 5-phase autonomous development workflow"
     },
     {
       "name": "detect-language",
@@ -106,8 +106,8 @@
   ],
   "commands": [
     {
-      "name": "autopilot",
-      "path": "commands/autopilot.md",
+      "name": "foreman",
+      "path": "commands/foreman.md",
       "description": "Start autonomous development from requirement to delivery"
     }
   ],
@@ -126,7 +126,7 @@
     "workspaceDir": {
       "type": "string",
       "default": "workspace",
-      "description": "Directory for autopilot workspace (ai/tasks, ai/state.json, etc.)"
+      "description": "Directory for foreman workspace (ai/tasks, ai/state.json, etc.)"
     },
     "defaultLanguage": {
       "type": "string",

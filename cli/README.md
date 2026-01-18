@@ -1,16 +1,16 @@
-# Autopilot CLI | 自动驾驶命令行工具
+# Foreman CLI
 
-**Version:** 1.0.0
+**Version:** 2.1.0
 **Language:** TypeScript
-**Purpose:** Efficient operations for Autopilot skills
+**Purpose:** Efficient operations for Foreman skills
 
-用TypeScript实现的高效命令行工具，供Autopilot技能调用。
+A high-performance TypeScript-based command-line tool for Foreman skills.
 
 ---
 
-## Overview | 概述
+## Overview
 
-The Autopilot CLI is a TypeScript-based command-line tool that provides fast, reliable operations for:
+The Foreman CLI is a TypeScript-based command-line tool that provides fast, reliable operations for:
 
 - Task management (CRUD)
 - State management
@@ -18,15 +18,13 @@ The Autopilot CLI is a TypeScript-based command-line tool that provides fast, re
 - Language detection
 - Verification execution
 
-Autopilot CLI是一个基于TypeScript的命令行工具，提供快速、可靠的操作。
-
 ---
 
-## Installation | 安装
+## Installation
 
 ```bash
 # Install dependencies
-cd autopilot/cli
+cd foreman/cli
 npm install
 
 # Build
@@ -36,12 +34,12 @@ npm run build
 npm link
 
 # Or use directly
-npx autopilot-cli <command>
+npx skillstore-foreman <command>
 ```
 
 ---
 
-## Architecture | 架构
+## Architecture
 
 ```
 cli/
@@ -73,57 +71,57 @@ cli/
 │       ├── go/
 │       └── rust/
 └── bin/
-    └── autopilot-cli.js
+    └── skillstore-foreman.js
 ```
 
 ---
 
-## Commands Reference | 命令参考
+## Commands Reference
 
-### State Management | 状态管理
+### State Management
 
 ```bash
 # Get state value
-autopilot-cli state get <key>
-autopilot-cli state get phase
+skillstore-foreman state get <key>
+skillstore-foreman state get phase
 # Output: "implement"
 
 # Set state value
-autopilot-cli state set <key> <value>
-autopilot-cli state set phase deliver
+skillstore-foreman state set <key> <value>
+skillstore-foreman state set phase deliver
 
 # Update multiple values (JSON)
-autopilot-cli state update '<json>'
-autopilot-cli state update '{"autoFixes": 3}'
+skillstore-foreman state update '<json>'
+skillstore-foreman state update '{"autoFixes": 3}'
 
 # Show full state
-autopilot-cli state show
-autopilot-cli state show --json
+skillstore-foreman state show
+skillstore-foreman state show --json
 
 # Initialize state
-autopilot-cli state init "<requirement>"
+skillstore-foreman state init "<requirement>"
 ```
 
-### Task Management | 任务管理
+### Task Management
 
 ```bash
 # List tasks
-autopilot-cli tasks list
-autopilot-cli tasks list --status pending
-autopilot-cli tasks list --module auth
-autopilot-cli tasks list --json
+skillstore-foreman tasks list
+skillstore-foreman tasks list --status pending
+skillstore-foreman tasks list --module auth
+skillstore-foreman tasks list --json
 
 # Get next task
-autopilot-cli tasks next
-autopilot-cli tasks next --json
+skillstore-foreman tasks next
+skillstore-foreman tasks next --json
 
 # Get specific task
-autopilot-cli tasks get <task-id>
-autopilot-cli tasks get auth.login.ui
-autopilot-cli tasks get auth.login.ui --json
+skillstore-foreman tasks get <task-id>
+skillstore-foreman tasks get auth.login.ui
+skillstore-foreman tasks get auth.login.ui --json
 
 # Create task
-autopilot-cli tasks create \
+skillstore-foreman tasks create \
   --id <id> \
   --module <module> \
   --title "<title>" \
@@ -132,96 +130,96 @@ autopilot-cli tasks create \
   --estimated <minutes>
 
 # Mark complete
-autopilot-cli tasks done <task-id> \
+skillstore-foreman tasks done <task-id> \
   --duration "<duration>" \
   --files "<comma-separated>"
 
 # Mark failed
-autopilot-cli tasks fail <task-id> \
+skillstore-foreman tasks fail <task-id> \
   --reason "<reason>"
 
 # Update task
-autopilot-cli tasks update <task-id> \
+skillstore-foreman tasks update <task-id> \
   --status <status> \
   --priority <number>
 
 # Show progress
-autopilot-cli tasks progress
+skillstore-foreman tasks progress
 ```
 
-### PRD Operations | PRD操作
+### PRD Operations
 
 ```bash
 # Parse PRD
-autopilot-cli prd parse <file>
-autopilot-cli prd parse .autopilot/prd.md
-autopilot-cli prd parse .autopilot/prd.md --json
+skillstore-foreman prd parse <file>
+skillstore-foreman prd parse .foreman/prd.md
+skillstore-foreman prd parse .foreman/prd.md --json
 
 # Generate tasks from PRD
-autopilot-cli prd generate-tasks <file>
-autopilot-cli prd generate-tasks .autopilot/prd.md --output .autopilot/tasks/
+skillstore-foreman prd generate-tasks <file>
+skillstore-foreman prd generate-tasks .foreman/prd.md --output .foreman/tasks/
 
 # Validate PRD
-autopilot-cli prd validate <file>
+skillstore-foreman prd validate <file>
 ```
 
-### Language Detection | 语言检测
+### Language Detection
 
 ```bash
 # Detect language
-autopilot-cli detect language
-autopilot-cli detect language --json
+skillstore-foreman detect language
+skillstore-foreman detect language --json
 
 # Detect framework
-autopilot-cli detect framework
+skillstore-foreman detect framework
 
 # Detect test framework
-autopilot-cli detect test-framework
+skillstore-foreman detect test-framework
 
 # Get verification commands
-autopilot-cli detect verify-commands
-autopilot-cli detect verify-commands --json
+skillstore-foreman detect verify-commands
+skillstore-foreman detect verify-commands --json
 ```
 
-### Verification | 验证
+### Verification
 
 ```bash
 # Run verification
-autopilot-cli verify
-autopilot-cli verify --language typescript
-autopilot-cli verify --language python
+skillstore-foreman verify
+skillstore-foreman verify --language typescript
+skillstore-foreman verify --language python
 
 # Custom commands
-autopilot-cli verify --command "npm test" --command "npm run build"
+skillstore-foreman verify --command "npm test" --command "npm run build"
 
 # Parse test output
-autopilot-cli verify parse-test-output <file>
+skillstore-foreman verify parse-test-output <file>
 ```
 
-### Breakdown | 任务拆解
+### Breakdown
 
 ```bash
 # Decompose user story
-autopilot-cli breakdown story \
+skillstore-foreman breakdown story \
   --text "<story>" \
   --language <lang> \
   --tech-stack "<stack>"
 
 # Validate task size
-autopilot-cli breakdown validate-size <task-file>
+skillstore-foreman breakdown validate-size <task-file>
 
 # Split oversized task
-autopilot-cli breakdown split <task-file>
+skillstore-foreman breakdown split <task-file>
 
 # Validate all tasks
-autopilot-cli breakdown validate-all <tasks-dir>
+skillstore-foreman breakdown validate-all <tasks-dir>
 ```
 
 ---
 
-## Implementation Examples | 实现示例
+## Implementation Examples
 
-### 1. Task Parser | 任务解析器
+### 1. Task Parser
 
 ```typescript
 // cli/src/core/task-parser.ts
@@ -359,7 +357,7 @@ export class TaskParser {
 }
 ```
 
-### 2. Task Writer | 任务写入器
+### 2. Task Writer
 
 ```typescript
 // cli/src/core/task-writer.ts
@@ -487,7 +485,7 @@ export class TaskWriter {
 }
 ```
 
-### 3. Language Detector | 语言检测器
+### 3. Language Detector
 
 ```typescript
 // cli/src/language/detector.ts
@@ -703,7 +701,7 @@ export class LanguageDetector {
 }
 ```
 
-### 4. CLI Entry Point | CLI入口
+### 4. CLI Entry Point
 
 ```typescript
 // cli/src/index.ts
@@ -719,12 +717,12 @@ import { BreakdownCommands } from './commands/breakdown';
 const program = new Command();
 
 program
-  .name('autopilot-cli')
-  .description('Autopilot CLI - Efficient operations for AI agents')
-  .version('1.0.0');
+  .name('skillstore-foreman')
+  .description('Foreman CLI - Efficient operations for AI agents')
+  .version('2.1.0');
 
 // State management
-const state = program.command('state').description('Manage autopilot state');
+const state = program.command('state').description('Manage foreman state');
 StateCommands.register(state);
 
 // Task management
@@ -752,7 +750,7 @@ program.parse();
 
 ---
 
-## Usage in Skills | 在技能中使用
+## Usage in Skills
 
 ### Example: Phase 3 Implementation Skill
 
@@ -766,7 +764,7 @@ program.parse();
 
 while true; do
   # Get next task (CLI is much faster than parsing files)
-  TASK_JSON=$(autopilot-cli tasks next --json)
+  TASK_JSON=$(skillstore-foreman tasks next --json)
 
   if [ "$TASK_JSON" = "null" ]; then
     echo "✅ All tasks complete"
@@ -783,25 +781,25 @@ while true; do
 
   # Update task using CLI (much faster than file editing)
   if [ "$result_status" = "success" ]; then
-    autopilot-cli tasks done "$TASK_ID" \
+    skillstore-foreman tasks done "$TASK_ID" \
       --duration "$result_duration" \
       --files "$result_files"
     echo "✅ Task complete"
   else
-    autopilot-cli tasks fail "$TASK_ID" \
+    skillstore-foreman tasks fail "$TASK_ID" \
       --reason "$result_error"
     echo "❌ Task failed"
   fi
 
   # Show progress (CLI formats it nicely)
-  autopilot-cli tasks progress
+  skillstore-foreman tasks progress
 done
 ```
 ```
 
 ---
 
-## Testing | 测试
+## Testing
 
 ```bash
 # Run tests
@@ -816,7 +814,7 @@ npm test -- --coverage
 
 ---
 
-## Next Steps | 下一步
+## Next Steps
 
 1. ✅ Implement core commands (state, tasks)
 2. ✅ Add language detection
@@ -828,6 +826,4 @@ npm test -- --coverage
 
 ---
 
-**The CLI provides the efficient foundation for Autopilot skills!**
-
-**CLI为Autopilot技能提供了高效的基础！**
+**The CLI provides the efficient foundation for Foreman skills!**

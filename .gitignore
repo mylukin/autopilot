@@ -38,15 +38,15 @@ temp/
 .claude/
 .claude-plugin/.local/
 
-# Autopilot - Ignore runtime state, keep documentation
-.autopilot/state.json
-.autopilot/progress.log
-.autopilot/debug.log
-.autopilot/tasks/index.json
+# Foreman - Ignore runtime state, keep documentation
+.foreman/state.json
+.foreman/progress.log
+.foreman/debug.log
+.foreman/tasks/index.json
 
 # Keep PRD and task definitions (valuable documentation)
-!.autopilot/prd.md
-!.autopilot/tasks/**/*.md
+!.foreman/prd.md
+!.foreman/tasks/**/*.md
 
 # Keep directory structure in repo template
 !workspace/.gitkeep
