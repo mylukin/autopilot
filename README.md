@@ -26,23 +26,31 @@ Foreman is an autonomous development system for Claude Code that transforms a si
 
 ## Quick Start (60 seconds)
 
-### Step 1: Install the CLI globally
-
-```bash
-npm install -g @skillstore/foreman
-```
-
-> 步骤 1：全局安装 CLI
-
-### Step 2: Install the Claude Code plugin
+### Step 1: Add the marketplace
 
 In your Claude Code conversation:
+
+```
+/plugin marketplace add mylukin/foreman
+```
+
+This registers the Foreman plugin catalog with Claude Code.
+
+> 步骤 1：添加 marketplace
+>
+> 这会在 Claude Code 中注册 Foreman 插件目录。
+
+### Step 2: Install the Foreman plugin
 
 ```
 /plugin install foreman
 ```
 
-> 步骤 2：安装 Claude Code 插件
+The plugin will auto-build its CLI on first use (~15-30 seconds one-time).
+
+> 步骤 2：安装 Foreman 插件
+>
+> 插件会在首次使用时自动构建 CLI（一次性，约 15-30 秒）。
 
 ### Step 3: Run your first task
 
@@ -238,50 +246,110 @@ Based on production usage across 500+ tasks:
 
 ## Installation & Setup
 
+### What is a Claude Code Marketplace?
+
+A **marketplace** is a plugin catalog that helps you discover and install Claude Code plugins. Think of it like a software repository (similar to npm registry or apt repository).
+
+> **什么是 Claude Code Marketplace？**
+>
+> Marketplace 是一个插件目录，帮助你发现和安装 Claude Code 插件。可以把它想象成软件仓库（类似于 npm registry 或 apt repository）。
+
+**How it works:**
+1. **Add marketplace** → Registers the plugin catalog (like adding a repository source)
+2. **Browse plugins** → See what's available in that marketplace
+3. **Install plugins** → Download and activate plugins from the marketplace
+
+> **工作原理：**
+> 1. **添加 marketplace** → 注册插件目录（类似添加软件源）
+> 2. **浏览插件** → 查看该 marketplace 中的可用插件
+> 3. **安装插件** → 从 marketplace 下载并激活插件
+
 ### Prerequisites
 
-- **Node.js** >= 18.0.0
-- **npm** >= 9.0.0
 - **Claude Code** (latest version)
-- Git repository (for PR creation)
+- **Node.js** >= 18.0.0 (for CLI auto-build)
+- **npm** >= 9.0.0 (for CLI auto-build)
+- **Git repository** (for PR creation)
 
 > 前置要求
 
 ### Detailed Installation
 
-#### 1. Install the CLI tool globally
-
-```bash
-npm install -g @skillstore/foreman
-```
-
-This installs the high-performance TypeScript CLI used for task management, state tracking, and language detection.
-
-> 这将安装用于任务管理、状态跟踪和语言检测的高性能 TypeScript CLI。
-
-#### 2. Install the Claude Code plugin
+#### Step 1: Add the Foreman marketplace
 
 In any Claude Code conversation:
+
+```
+/plugin marketplace add mylukin/foreman
+```
+
+This adds the Foreman plugin catalog to Claude Code, allowing you to discover and install the plugin.
+
+> 这会将 Foreman 插件目录添加到 Claude Code，允许你发现和安装插件。
+
+**What this does:**
+- Registers the plugin catalog (no plugins installed yet)
+- Enables browsing available Foreman versions
+- Connects to the official Foreman repository
+
+> **作用：**
+> - 注册插件目录（尚未安装插件）
+> - 启用浏览可用的 Foreman 版本
+> - 连接到官方 Foreman 仓库
+
+#### Step 2: Install the Foreman plugin
 
 ```
 /plugin install foreman
 ```
 
-This registers Foreman's skills, commands, and agents with Claude Code.
+This installs the Foreman plugin with all its skills, commands, and agents.
 
-> 这将在 Claude Code 中注册 Foreman 的技能、命令和代理。
+> 这会安装 Foreman 插件及其所有技能、命令和代理。
 
-#### 3. Verify installation
+**What happens during installation:**
+- Downloads plugin files to `~/.claude/plugins/foreman`
+- Registers 5 core phase skills + orchestrator
+- Registers `/foreman` command
+- Sets up auto-bootstrap (CLI builds on first use)
+
+> **安装过程：**
+> - 下载插件文件到 `~/.claude/plugins/foreman`
+> - 注册 5 个核心阶段技能 + 编排器
+> - 注册 `/foreman` 命令
+> - 设置自动引导（CLI 在首次使用时构建）
+
+#### Step 3: Verify installation
 
 ```
-/foreman --version
+/foreman --help
 ```
 
-You should see the current version (2.2.0+).
+You should see the Foreman command help message.
 
-> 你应该看到当前版本（2.2.0+）。
+> 你应该看到 Foreman 命令帮助消息。
 
-### Alternative: Local Development Setup
+**First use note:** The CLI will auto-build on first `/foreman` invocation (~15-30 seconds one-time). Subsequent uses are instant.
+
+> **首次使用注意：** CLI 会在首次调用 `/foreman` 时自动构建（一次性，约 15-30 秒）。后续使用即时响应。
+
+### Alternative Installation Methods
+
+#### Method A: Direct GitHub installation (no marketplace)
+
+For users who prefer direct installation:
+
+> 对于偏好直接安装的用户：
+
+```
+/plugin install mylukin/foreman
+```
+
+This installs directly from the GitHub repository without adding the marketplace first.
+
+> 这会直接从 GitHub 仓库安装，无需先添加 marketplace。
+
+#### Method B: Local development setup
 
 For plugin developers or contributors:
 
@@ -411,26 +479,22 @@ your-project/
 
 ## Troubleshooting
 
-### Issue: CLI not found after npm install
+### Issue: Marketplace not found
 
 **Symptom:**
 ```
-/foreman: command not found
+Error: Marketplace 'mylukin/foreman' not found
 ```
 
 **Solution:**
-```bash
-# Check npm global bin path
-npm list -g --depth=0 | grep foreman
+```
+# Try alternative installation method (direct GitHub)
+/plugin install mylukin/foreman
 
-# If missing, reinstall
-npm install -g @skillstore/foreman
-
-# Verify installation
-which foreman
+# Or use local development setup (see Alternative Installation Methods)
 ```
 
-> 问题：npm 安装后找不到 CLI
+> 问题：找不到 marketplace
 
 ### Issue: Plugin not loading in Claude Code
 
@@ -441,9 +505,12 @@ Unknown command: /foreman
 
 **Solution:**
 ```
-# Reinstall plugin
-/plugin uninstall foreman
+# Method 1: Reinstall via marketplace
+/plugin marketplace add mylukin/foreman
 /plugin install foreman
+
+# Method 2: Direct GitHub installation
+/plugin install mylukin/foreman
 
 # Restart Claude Code session
 /clear
@@ -621,7 +688,7 @@ Add templates in `cli/src/language/templates/` for new languages. See existing t
 - 📖 **Documentation**: [Skill files](/skills) - Deep dive into each phase
 - 🐛 **Bug Reports**: [GitHub Issues](https://github.com/mylukin/foreman/issues)
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/mylukin/foreman/discussions)
-- 📦 **npm Package**: [@skillstore/foreman](https://www.npmjs.com/package/@skillstore/foreman)
+- 🏪 **Marketplace**: Install via `/plugin marketplace add mylukin/foreman`
 - 🌐 **Repository**: [github.com/mylukin/foreman](https://github.com/mylukin/foreman)
 
 ---
@@ -648,12 +715,9 @@ Special thanks to early testers and contributors who helped shape Foreman into a
 
 **Ready to transform your development workflow?**
 
-```bash
-npm install -g @skillstore/foreman
+In Claude Code:
 ```
-
-Then in Claude Code:
-```
+/plugin marketplace add mylukin/foreman
 /plugin install foreman
 /foreman "Your first task here"
 ```
