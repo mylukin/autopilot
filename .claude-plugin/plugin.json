@@ -1,0 +1,131 @@
+{
+  "name": "autopilot",
+  "version": "2.0.0",
+  "description": "Autonomous end-to-end development system - from requirement to production-ready code with zero manual intervention",
+  "author": "Lukin",
+  "license": "MIT",
+  "minClaudeVersion": "1.0.0",
+  "engines": {
+    "claudeCode": ">=1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/autopilot"
+  },
+  "keywords": [
+    "autopilot",
+    "autonomous",
+    "ai-agent",
+    "code-generation",
+    "tdd",
+    "multi-language",
+    "self-healing"
+  ],
+  "capabilities": {
+    "languages": [
+      "typescript",
+      "javascript",
+      "python",
+      "go",
+      "rust",
+      "java",
+      "ruby",
+      "php",
+      "csharp",
+      "cpp",
+      "swift",
+      "kotlin",
+      "scala",
+      "any"
+    ],
+    "features": [
+      "interactive-clarification",
+      "autonomous-task-breakdown",
+      "tdd-enforcement",
+      "self-healing",
+      "code-review",
+      "auto-delivery",
+      "ai-language-detection"
+    ]
+  },
+  "skills": [
+    {
+      "name": "autopilot-orchestrator",
+      "path": "skills/autopilot-orchestrator/SKILL.md",
+      "userInvocable": true,
+      "description": "Main autopilot orchestrator - 5-phase autonomous development workflow"
+    },
+    {
+      "name": "detect-language",
+      "path": "skills/detect-language/SKILL.md",
+      "userInvocable": true,
+      "description": "AI-powered language and framework detection for any programming language"
+    },
+    {
+      "name": "phase-1-clarify",
+      "path": "skills/phase-1-clarify/SKILL.md",
+      "userInvocable": false,
+      "description": "Interactive requirement clarification with structured questions"
+    },
+    {
+      "name": "phase-2-breakdown",
+      "path": "skills/phase-2-breakdown/SKILL.md",
+      "userInvocable": false,
+      "description": "Autonomous task breakdown into atomic, testable units"
+    },
+    {
+      "name": "phase-3-implement",
+      "path": "skills/phase-3-implement/SKILL.md",
+      "userInvocable": false,
+      "description": "Implementation loop with TDD and self-healing"
+    },
+    {
+      "name": "phase-4-heal",
+      "path": "skills/phase-4-heal/SKILL.md",
+      "userInvocable": false,
+      "description": "Self-healing error recovery using WebSearch"
+    },
+    {
+      "name": "phase-5-deliver",
+      "path": "skills/phase-5-deliver/SKILL.md",
+      "userInvocable": false,
+      "description": "Quality gates, commit creation, and PR delivery"
+    }
+  ],
+  "commands": [
+    {
+      "name": "autopilot",
+      "path": "commands/autopilot.md",
+      "description": "Start autonomous development from requirement to delivery"
+    }
+  ],
+  "agents": [
+    {
+      "name": "language-detector",
+      "path": "agents/language-detector.md",
+      "description": "Autonomous language and framework detection"
+    }
+  ],
+  "hooks": {
+    "sessionStart": "hooks/session-start.sh",
+    "autoCompact": "hooks/auto-compact.sh"
+  },
+  "configuration": {
+    "workspaceDir": {
+      "type": "string",
+      "default": "workspace",
+      "description": "Directory for autopilot workspace (ai/tasks, ai/state.json, etc.)"
+    },
+    "defaultLanguage": {
+      "type": "string",
+      "default": "auto",
+      "description": "Default language detection: 'auto' (AI), 'template', or specific language"
+    },
+    "tddMode": {
+      "type": "string",
+      "default": "recommended",
+      "enum": ["strict", "recommended", "disabled"],
+      "description": "TDD enforcement level"
+    }
+  }
+}

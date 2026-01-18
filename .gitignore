@@ -1,0 +1,200 @@
+# ============================================
+# Autopilot Project .gitignore
+# ============================================
+
+# ============================================
+# Node.js / npm
+# ============================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Package manager lock files (keep package-lock.json for consistency)
+# yarn.lock
+# pnpm-lock.yaml
+
+# ============================================
+# Build outputs
+# ============================================
+dist/
+build/
+*.tsbuildinfo
+*.js.map
+
+# TypeScript compilation cache
+*.tsbuildinfo
+
+# ============================================
+# IDE / Editor
+# ============================================
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# JetBrains IDEs (WebStorm, IntelliJ, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.*.swp
+.*.swo
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# ============================================
+# Operating System
+# ============================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+.directory
+.Trash-*
+
+# ============================================
+# Autopilot Workspace (runtime data)
+# ============================================
+
+# Workspace runtime files (test artifacts)
+workspace/ai/prd.md
+workspace/ai/tasks/
+workspace/ai/progress.log
+workspace/ai/debug.log
+workspace/ai/delivery-summary.md
+workspace/ai/DELIVERY_REPORT.md
+workspace/ai/state.json
+
+# Keep workspace structure but ignore contents
+!workspace/.gitkeep
+!workspace/ai/.gitkeep
+
+# ============================================
+# Logs
+# ============================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ============================================
+# Environment variables
+# ============================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# ============================================
+# Testing
+# ============================================
+coverage/
+*.lcov
+.nyc_output/
+.coverage/
+htmlcov/
+junit.xml
+test-results/
+.vitest/
+
+# ============================================
+# Temporary files
+# ============================================
+tmp/
+temp/
+*.tmp
+*.temp
+.cache/
+
+# ============================================
+# Database
+# ============================================
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+
+# ============================================
+# Secrets and credentials
+# ============================================
+*.pem
+*.key
+*.cert
+*.crt
+secrets/
+credentials/
+
+# ============================================
+# CI/CD
+# ============================================
+.github/workflows/*.log
+
+# ============================================
+# Claude Code specific
+# ============================================
+.claude/
+.claude-plugin/.local/
+
+# ============================================
+# Project specific
+# ============================================
+
+# Keep the CLI README
+!cli/README.md
+
+# Ignore test outputs and debugging files
+CLEANUP_SUMMARY.md
+
+# ============================================
+# Miscellaneous
+# ============================================
+*.orig
+*.rej
+*.bak
+*.backup
+.eslintcache
