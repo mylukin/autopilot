@@ -82,14 +82,28 @@ When you run `/ralph-dev "<requirement>"`, the system executes 5 phases:
 
 🤔 **Asks 3-5 structured questions** to understand requirements:
 
+**Example Question:**
 ```
-Question 1/5: What type of application?
-   A) Web app (React/Vue/Angular)
-   B) Mobile app (React Native/Flutter)
-   C) API backend only
-   D) Full-stack (frontend + backend)
-
-Your choice: _
+┌─────────────────────────────────────────────────────────┐
+│ Question 1/5: What type of application do you want to   │
+│               build?                                     │
+├─────────────────────────────────────────────────────────┤
+│ [App Type]                                              │
+│                                                          │
+│  ○ Web app (Recommended)                                │
+│    React/Vue/Angular frontend with responsive design    │
+│                                                          │
+│  ○ Mobile app                                           │
+│    React Native or Flutter for iOS and Android          │
+│                                                          │
+│  ○ API backend                                          │
+│    REST or GraphQL API without frontend interface       │
+│                                                          │
+│  ○ Full-stack                                           │
+│    Integrated frontend and backend in single project    │
+│                                                          │
+│  ○ Other (specify)                                      │
+└─────────────────────────────────────────────────────────┘
 ```
 
 After all questions answered → Generates **Product Requirements Document (PRD)**
@@ -349,15 +363,15 @@ Ralph-dev:
 🚀 Starting Ralph-dev...
 Phase 1/5: Clarifying requirements...
 
-Question 1/5: What type of frontend?
-   A) React with Next.js
-   B) Vue with Nuxt
-   C) Vanilla JS
-   D) Static HTML
+┌─────────────────────────────────────────────────────────┐
+│ Question 1/5: What type of application do you want to   │
+│               build?                                     │
+├─────────────────────────────────────────────────────────┤
+│ [App Type]                                              │
+│  ● Web app (Recommended) ✓ Selected                    │
+└─────────────────────────────────────────────────────────┘
 
-User: A
-
-[... 4 more questions ...]
+[... 4 more questions answered ...]
 
 ✅ PRD generated
 Phase 2/5: Breaking down into tasks...
@@ -393,7 +407,7 @@ User: /ralph-dev resume
 
 Ralph-dev:
 ┌────────────────────────────────────┐
-│ 🚀 FOREMAN SESSION RESUMED       │
+│ 🚀 RALPH-DEV SESSION RESUMED       │
 ├────────────────────────────────────┤
 │ Phase:    implement (3/5)          │
 │ Progress: 9/15 tasks               │
