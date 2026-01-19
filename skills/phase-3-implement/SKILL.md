@@ -159,27 +159,27 @@ if ! echo "$TASKS_RESULT" | jq -e '.success == true' > /dev/null 2>&1; then
   exit 1
 fi
 
-# Extract total tasks from JSON
-TOTAL_TASKS=$(echo "$TASKS_RESULT" | jq -r '.data.total')
+# Extract total tasks from JSON (for initial display only)
+TOTAL_TASKS_INITIAL=$(echo "$TASKS_RESULT" | jq -r '.data.total')
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "🚀 Starting implementation of $TOTAL_TASKS tasks..."
+echo "🚀 Starting implementation of $TOTAL_TASKS_INITIAL tasks..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
 # Verify tasks exist
-if [ "$TOTAL_TASKS" -eq 0 ]; then
+if [ "$TOTAL_TASKS_INITIAL" -eq 0 ]; then
   echo "❌ ERROR: No tasks found in index!"
   echo "   Run Phase 2 (breakdown) first."
   exit 1
 fi
 
-# Initialize counters
-COMPLETED_COUNT=0
-FAILED_COUNT=0
-HEALED_COUNT=0
+# Initialize iteration counter (for infinite loop protection)
+# NOTE: Memory counters (COMPLETED_COUNT, etc.) removed for context-compression safety
+# All progress tracking now queries CLI directly
 LOOP_ITERATIONS=0
-MAX_ITERATIONS=$((TOTAL_TASKS * 2))  # Safety: prevent infinite loops
+LOOP_START_TIME=$(date +%s)
+MAX_LOOP_DURATION=$((24 * 3600))  # Safety: 24 hours max (prevents infinite loops)
 ```
 
 ### Step 2: Implementation Loop with Robust Verification
@@ -190,11 +190,19 @@ MAX_ITERATIONS=$((TOTAL_TASKS * 2))  # Safety: prevent infinite loops
 while true; do
   LOOP_ITERATIONS=$((LOOP_ITERATIONS + 1))
 
-  # Safety check: prevent infinite loops
-  if [ $LOOP_ITERATIONS -gt $MAX_ITERATIONS ]; then
-    echo "❌ CRITICAL ERROR: Loop exceeded $MAX_ITERATIONS iterations!"
-    echo "   Expected $TOTAL_TASKS tasks, but processed $LOOP_ITERATIONS times."
-    echo "   This indicates a bug in task management. Aborting."
+  # ═══════════════════════════════════════════
+  # SAFETY CHECK: Prevent infinite loops (context-compression safe)
+  # ═══════════════════════════════════════════
+  CURRENT_TIME=$(date +%s)
+  ELAPSED_TIME=$((CURRENT_TIME - LOOP_START_TIME))
+
+  if [ $ELAPSED_TIME -gt $MAX_LOOP_DURATION ]; then
+    echo "❌ CRITICAL ERROR: Loop exceeded $MAX_LOOP_DURATION seconds ($(($MAX_LOOP_DURATION / 3600)) hours)!"
+    echo "   Elapsed time: $(($ELAPSED_TIME / 3600)) hours $(($ELAPSED_TIME % 3600 / 60)) minutes"
+    echo "   This indicates a bug in task management or stuck task. Aborting."
+    echo ""
+    echo "Current state:"
+    ralph-dev tasks list --json | jq -r '.data | "Total: \(.total), Completed: \(.completed), Failed: \(.failed), Pending: \(.pending)"'
     exit 1
   fi
 
@@ -215,6 +223,12 @@ while true; do
     echo "🔍 No more pending tasks. Verifying completion..."
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
+    # ═══════════════════════════════════════════
+    # RE-QUERY all state from CLI (context-compression safe)
+    # ═══════════════════════════════════════════
+    # Get fresh total task count (don't rely on memory variable)
+    TOTAL_TASKS_ACTUAL=$(ralph-dev tasks list --json | jq -r '.data.total // 0')
+
     # Count tasks by status using JSON output
     PENDING_RESULT=$(ralph-dev tasks list --status pending --json)
     IN_PROGRESS_RESULT=$(ralph-dev tasks list --status in_progress --json)
@@ -231,7 +245,7 @@ while true; do
     ACCOUNTED_FOR=$((ACTUAL_COMPLETED + ACTUAL_FAILED))
 
     echo "📊 Verification Results:"
-    echo "   Total tasks:    $TOTAL_TASKS"
+    echo "   Total tasks:    $TOTAL_TASKS_ACTUAL"
     echo "   Completed:      $ACTUAL_COMPLETED"
     echo "   Failed:         $ACTUAL_FAILED"
     echo "   Pending:        $PENDING_COUNT"
@@ -264,18 +278,18 @@ while true; do
       exit 1
     fi
 
-    if [ $ACCOUNTED_FOR -ne $TOTAL_TASKS ]; then
+    if [ $ACCOUNTED_FOR -ne $TOTAL_TASKS_ACTUAL ]; then
       echo "❌ CRITICAL ERROR: Task count mismatch!"
-      echo "   Expected: $TOTAL_TASKS tasks"
+      echo "   Expected: $TOTAL_TASKS_ACTUAL tasks"
       echo "   Got:      $ACCOUNTED_FOR tasks (completed + failed)"
-      echo "   Missing:  $((TOTAL_TASKS - ACCOUNTED_FOR)) tasks"
+      echo "   Missing:  $((TOTAL_TASKS_ACTUAL - ACCOUNTED_FOR)) tasks"
       echo ""
       echo "CANNOT proceed to Phase 5. All tasks must be accounted for."
       exit 1
     fi
 
     # ✅ ALL CHECKS PASSED - Safe to exit
-    echo "✅ Verification passed! All $TOTAL_TASKS tasks accounted for."
+    echo "✅ Verification passed! All $TOTAL_TASKS_ACTUAL tasks accounted for."
     echo "   Completed: $ACTUAL_COMPLETED"
     echo "   Failed:    $ACTUAL_FAILED"
     echo ""
@@ -385,8 +399,7 @@ while true; do
   # STEP 5: Handle result (based on structured output)
   # ═══════════════════════════════════════════
   if [ "$IMPLEMENTATION_SUCCESS" = true ]; then
-    # Task succeeded
-    COMPLETED_COUNT=$((COMPLETED_COUNT + 1))
+    # Task succeeded - persist to CLI
     ralph-dev tasks done "$TASK_ID" --duration "$DURATION_STR"
 
     echo "✅ $TASK_ID completed"
@@ -404,16 +417,13 @@ while true; do
     HEAL_SUCCESS=false  # Replace with actual heal result
 
     if [ "$HEAL_SUCCESS" = true ]; then
-      # Healing succeeded
-      COMPLETED_COUNT=$((COMPLETED_COUNT + 1))
-      HEALED_COUNT=$((HEALED_COUNT + 1))
+      # Healing succeeded - persist to CLI
       ralph-dev tasks done "$TASK_ID" --duration "$DURATION_STR (healed)"
 
       echo "✅ Auto-healed successfully!"
       echo ""
     else
       # Healing failed - mark as failed and continue
-      FAILED_COUNT=$((FAILED_COUNT + 1))
       ralph-dev tasks fail "$TASK_ID" --reason "Implementation and healing failed"
 
       echo "❌ Could not heal. Marked as failed."
@@ -423,26 +433,35 @@ while true; do
   fi
 
   # ═══════════════════════════════════════════
-  # STEP 6: Show progress
+  # STEP 6: Show progress (query CLI, context-compression safe)
   # ═══════════════════════════════════════════
-  TOTAL_PROCESSED=$((COMPLETED_COUNT + FAILED_COUNT))
-  PROGRESS_PCT=$((TOTAL_PROCESSED * 100 / TOTAL_TASKS))
+  # Query actual counts from CLI (don't rely on memory variables)
+  PROGRESS_TOTAL=$(ralph-dev tasks list --json | jq -r '.data.total // 0')
+  PROGRESS_COMPLETED=$(ralph-dev tasks list --status completed --json | jq -r '.data.total // 0')
+  PROGRESS_FAILED=$(ralph-dev tasks list --status failed --json | jq -r '.data.total // 0')
+  PROGRESS_PROCESSED=$((PROGRESS_COMPLETED + PROGRESS_FAILED))
 
-  echo "📊 Progress: $TOTAL_PROCESSED/$TOTAL_TASKS tasks ($PROGRESS_PCT%)"
-  echo "   ✅ Completed: $COMPLETED_COUNT"
-  echo "   ❌ Failed: $FAILED_COUNT"
-  if [ $HEALED_COUNT -gt 0 ]; then
-    echo "   🔧 Auto-healed: $HEALED_COUNT"
+  # Calculate progress percentage safely
+  if [ "$PROGRESS_TOTAL" -gt 0 ]; then
+    PROGRESS_PCT=$((PROGRESS_PROCESSED * 100 / PROGRESS_TOTAL))
+  else
+    PROGRESS_PCT=0
   fi
+
+  echo "📊 Progress: $PROGRESS_PROCESSED/$PROGRESS_TOTAL tasks ($PROGRESS_PCT%)"
+  echo "   ✅ Completed: $PROGRESS_COMPLETED"
+  echo "   ❌ Failed: $PROGRESS_FAILED"
   echo ""
 
   # ═══════════════════════════════════════════
-  # STEP 7: Safety check - verify we're making progress
+  # STEP 7: Continue to next task
   # ═══════════════════════════════════════════
-  if [ $TOTAL_PROCESSED -ge $TOTAL_TASKS ]; then
-    echo "✅ All $TOTAL_TASKS tasks processed. Exiting loop."
-    break
-  fi
+  # Loop continues automatically to process next task
+  # Exit condition is handled in STEP 2 (when CLI returns no more tasks)
+  #
+  # Note: We removed the old "TOTAL_PROCESSED >= TOTAL_TASKS" check here
+  # because it relied on memory variables that are lost during context compression.
+  # The proper exit logic is in STEP 2 where we verify all tasks from CLI.
 
   # ═══════════════════════════════════════════
   # STEP 8: Continue loop (EXPLICIT INSTRUCTION)
@@ -783,38 +802,45 @@ Start with RED phase now.
 
 4. **Handle healing result:**
    - If healed successfully (HEAL_SUCCESS=true):
-     * Mark task as completed
-     * Increment auto-healed counter
+     * Mark task as completed (persisted to CLI)
      * Log to debug.log
      * Continue to next task
 
    - If healing failed (HEAL_SUCCESS=false):
-     * Mark task as failed
+     * Mark task as failed (persisted to CLI)
      * Log detailed error to debug.log
      * Continue to next task (don't block entire workflow)
 
-4. **Update progress:**
-   ```bash
-   echo "🔧 Auto-healed: $HEALED_COUNT errors"
-   ```
-
 **IMPORTANT:** Auto-healing should be attempted ONCE per task failure. If healing fails, mark task as failed and move on. Do NOT retry indefinitely.
+
+**Note:** Progress tracking is handled automatically in STEP 6, which queries CLI for actual counts instead of using memory counters.
 
 ### Step 5: Final Summary
 
 ```bash
+# Query final statistics from CLI (context-compression safe)
+FINAL_TOTAL=$(ralph-dev tasks list --json | jq -r '.data.total // 0')
+FINAL_COMPLETED=$(ralph-dev tasks list --status completed --json | jq -r '.data.total // 0')
+FINAL_FAILED=$(ralph-dev tasks list --status failed --json | jq -r '.data.total // 0')
+
+# Calculate success rate safely
+if [ "$FINAL_TOTAL" -gt 0 ]; then
+  SUCCESS_RATE=$((FINAL_COMPLETED * 100 / FINAL_TOTAL))
+else
+  SUCCESS_RATE=0
+fi
+
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🎯 Implementation Complete!"
 echo ""
 echo "📊 Final Statistics:"
-echo "   Total tasks: $TASK_COUNT"
-echo "   ✅ Completed: $COMPLETED"
-echo "   ❌ Failed: $FAILED"
-echo "   🔧 Auto-healed: $HEALED"
-echo "   Success rate: $((COMPLETED * 100 / TASK_COUNT))%"
+echo "   Total tasks: $FINAL_TOTAL"
+echo "   ✅ Completed: $FINAL_COMPLETED"
+echo "   ❌ Failed: $FINAL_FAILED"
+echo "   Success rate: ${SUCCESS_RATE}%"
 echo ""
 
-if [ $FAILED -gt 0 ]; then
+if [ "$FINAL_FAILED" -gt 0 ]; then
   echo "⚠️  Some tasks failed. They are marked with status='failed'."
   echo "   Review failed tasks in .ralph-dev/tasks/"
   echo ""

@@ -11,8 +11,6 @@ user-invocable: false
 
 Interactively clarify user requirements through structured questions, then generate a comprehensive Product Requirements Document (PRD).
 
-通过结构化问题交互式澄清用户需求，然后生成全面的产品需求文档 (PRD)。
-
 ## When to Use
 
 Invoked by dev-orchestrator as Phase 1 of the autonomous development workflow.

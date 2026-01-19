@@ -136,9 +136,9 @@ For each user story or requirement, create 1-3 atomic tasks.
 - `auth.signup.api` (25 min) - Create signup API endpoint
 - `auth.signup.tests` (20 min) - Write unit & integration tests
 
-### Step 4: Create Task Files Using CLI (Best Practices)
+### Step 4: Create Task Files Using CLI (Context-Compression Safe)
 
-For each task, create task files using the ralph-dev CLI with **JSON output and error handling**:
+**CRITICAL:** Create tasks sequentially, one at a time, to ensure immediate persistence to disk. This approach is 100% context-compression resilient.
 
 ```bash
 # Initialize tasks directory and index with JSON output
@@ -148,7 +148,7 @@ INIT_RESULT=$(ralph-dev tasks init \
   --framework "Next.js" \
   --json 2>&1)
 
-# Check initialization success
+# Check initialization success (context-compression safe)
 if echo "$INIT_RESULT" | jq -e '.success == true' > /dev/null 2>&1; then
   echo "✓ Tasks system initialized"
 else
@@ -157,9 +157,18 @@ else
   exit 1
 fi
 
-# Create each task using CLI with JSON output
-# Example for auth.signup.ui:
+# ═══════════════════════════════════════════════════════
+# TASK CREATION LOOP (Context-Compression Resilient)
+# ═══════════════════════════════════════════════════════
+# Create each task immediately using CLI - no memory buffering
+# Each call persists to disk before moving to next task
 
+echo "Creating tasks sequentially (context-compression safe)..."
+echo ""
+
+TASK_COUNT=0
+
+# Example: auth.signup.ui
 CREATE_RESULT=$(ralph-dev tasks create \
   --id "auth.signup.ui" \
   --module "auth" \
@@ -177,47 +186,68 @@ CREATE_RESULT=$(ralph-dev tasks create \
   --test-pattern "tests/auth/SignupForm.test.*" \
   --json 2>&1)
 
-# Check creation success
 if echo "$CREATE_RESULT" | jq -e '.success == true' > /dev/null 2>&1; then
   TASK_ID=$(echo "$CREATE_RESULT" | jq -r '.data.taskId // .data.id')
-  echo "✓ Task $TASK_ID created successfully"
+  TASK_COUNT=$((TASK_COUNT + 1))
+  echo "✓ [$TASK_COUNT] Task $TASK_ID created and persisted to disk"
 else
   ERROR_MSG=$(echo "$CREATE_RESULT" | jq -r '.error.message' 2>&1 || echo "Unknown error")
   echo "✗ Failed to create task: $ERROR_MSG"
-  # Continue with next task or handle error appropriately
+  # Log error but continue with next task
 fi
 
-# For each subsequent task, repeat the create command with different parameters
+# Example: auth.signup.validation
+CREATE_RESULT=$(ralph-dev tasks create \
+  --id "auth.signup.validation" \
+  --module "auth" \
+  --priority 2 \
+  --estimated-minutes 15 \
+  --description "Add form validation for signup" \
+  --criteria "Email validation using regex or library" \
+  --criteria "Password strength check (min 8 chars, uppercase, lowercase, number)" \
+  --criteria "Passwords match validation" \
+  --criteria "Validation errors display to user" \
+  --criteria "Unit tests for all validation rules" \
+  --test-pattern "tests/auth/validation.test.*" \
+  --json 2>&1)
+
+if echo "$CREATE_RESULT" | jq -e '.success == true' > /dev/null 2>&1; then
+  TASK_ID=$(echo "$CREATE_RESULT" | jq -r '.data.taskId // .data.id')
+  TASK_COUNT=$((TASK_COUNT + 1))
+  echo "✓ [$TASK_COUNT] Task $TASK_ID created and persisted to disk"
+else
+  ERROR_MSG=$(echo "$CREATE_RESULT" | jq -r '.error.message' 2>&1 || echo "Unknown error")
+  echo "✗ Failed to create task: $ERROR_MSG"
+fi
+
+# Continue with remaining tasks...
+# (Each task is created immediately, persisted to disk, then move to next)
+
+echo ""
+
+# ═══════════════════════════════════════════════════════
+# FINAL VERIFICATION (Context-Compression Safe)
+# ═══════════════════════════════════════════════════════
+# Re-query CLI to get actual total (don't trust memory variable)
+VERIFY_RESULT=$(ralph-dev tasks list --json 2>&1)
+
+if echo "$VERIFY_RESULT" | jq -e '.success == true' > /dev/null 2>&1; then
+  ACTUAL_TOTAL=$(echo "$VERIFY_RESULT" | jq -r '.data.total // 0')
+  echo "✅ All tasks created and verified: $ACTUAL_TOTAL tasks persisted to disk"
+else
+  echo "⚠️  Task creation completed but verification failed"
+  echo "   Manual verification: ralph-dev tasks list"
+fi
+echo ""
 ```
 
-**Best Practice: Use batch operations for better performance**
+**Why Sequential Creation is Best:**
 
-```bash
-# Alternative: Create multiple tasks in a batch operation (10x faster)
-# Build task operations array
-OPERATIONS='[]'
-
-# Add auth.signup.ui task
-OPERATIONS=$(echo "$OPERATIONS" | jq '. + [{
-  "action": "create",
-  "taskId": "auth.signup.ui",
-  "module": "auth",
-  "priority": 1,
-  "estimatedMinutes": 20,
-  "description": "Create signup form component",
-  "criteria": [
-    "Component exists at src/components/SignupForm.tsx",
-    "Form has email, password, confirmPassword fields",
-    "Form validates email format"
-  ]
-}]')
-
-# Add more tasks...
-# (repeat for other tasks)
-
-# Execute batch creation (when available)
-# ralph-dev tasks batch-create --operations "$OPERATIONS" --json
-```
+- ✅ **Context-Compression Safe**: Each task persists to disk immediately
+- ✅ **Recoverable**: If interrupted, already-created tasks are preserved
+- ✅ **Debuggable**: Errors are caught per-task, not after batch
+- ✅ **Verifiable**: Can query CLI at any point to see created tasks
+- ❌ **Never use batch operations**: Accumulating tasks in memory is vulnerable to context compression
 
 **Helper function to extract goal from PRD:**
 

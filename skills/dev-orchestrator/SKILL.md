@@ -42,225 +42,300 @@ cd $PROJECT_ROOT
 # Detect project language and save configuration
 ralph-dev detect --save
 
-# Initialize state to clarify phase
-ralph-dev state set --phase clarify
+# Check if resuming existing session or starting new
+CURRENT_STATE=$(ralph-dev state get --json 2>/dev/null)
+
+if echo "$CURRENT_STATE" | jq -e '.phase' > /dev/null 2>&1; then
+  CURRENT_PHASE=$(echo "$CURRENT_STATE" | jq -r '.phase')
+  echo "🔄 Resuming from phase: $CURRENT_PHASE"
+else
+  # New session - initialize to clarify phase
+  ralph-dev state set --phase clarify
+  CURRENT_PHASE="clarify"
+  echo "🚀 Starting new Ralph-dev session"
+fi
+```
+
+### Main Execution Loop (Context-Compression Resilient)
+
+**CRITICAL:** This loop is state-driven and can recover from context compression at any point.
+
+```bash
+# Store user requirement for clarify phase
+USER_REQUIREMENT="$1"  # From skill invocation
+
+# Loop start time for safety timeout
+ORCHESTRATOR_START_TIME=$(date +%s)
+MAX_ORCHESTRATOR_DURATION=$((12 * 3600))  # 12 hours max
+
+while true; do
+  # ═══════════════════════════════════════════
+  # SAFETY: Timeout check (context-compression safe)
+  # ═══════════════════════════════════════════
+  CURRENT_TIME=$(date +%s)
+  ELAPSED_TIME=$((CURRENT_TIME - ORCHESTRATOR_START_TIME))
+
+  if [ $ELAPSED_TIME -gt $MAX_ORCHESTRATOR_DURATION ]; then
+    echo "❌ CRITICAL ERROR: Orchestrator exceeded $MAX_ORCHESTRATOR_DURATION seconds!"
+    echo "   Elapsed: $(($ELAPSED_TIME / 3600)) hours"
+    echo "   This likely indicates a stuck phase. Check logs."
+    exit 1
+  fi
+
+  # ═══════════════════════════════════════════
+  # RE-QUERY current phase from CLI (context-compression safe)
+  # ═══════════════════════════════════════════
+  CURRENT_STATE=$(ralph-dev state get --json 2>/dev/null)
+
+  if ! echo "$CURRENT_STATE" | jq -e '.phase' > /dev/null 2>&1; then
+    echo "❌ ERROR: Cannot read state from CLI"
+    echo "   Run: ralph-dev state get --json"
+    exit 1
+  fi
+
+  CURRENT_PHASE=$(echo "$CURRENT_STATE" | jq -r '.phase')
+
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "📍 Current Phase: $CURRENT_PHASE"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+
+  # ═══════════════════════════════════════════
+  # PHASE DISPATCH: Execute current phase
+  # ═══════════════════════════════════════════
+  case "$CURRENT_PHASE" in
+    clarify)
+      # Phase 1 logic (see below)
+      execute_phase_1_clarify
+      # Phase 1 updates state to "breakdown" on success
+      continue
+      ;;
+
+    breakdown)
+      # Phase 2 logic (see below)
+      execute_phase_2_breakdown
+      # Phase 2 updates state to "implement" on success
+      continue
+      ;;
+
+    implement)
+      # Phase 3 logic (see below)
+      execute_phase_3_implement
+      # Phase 3 updates state to "deliver" on success
+      continue
+      ;;
+
+    deliver)
+      # Phase 5 logic (see below)
+      execute_phase_5_deliver
+      # Phase 5 updates state to "complete" on success
+      continue
+      ;;
+
+    complete)
+      echo "✅ All phases complete!"
+      echo ""
+      break
+      ;;
+
+    *)
+      echo "❌ ERROR: Unknown phase: $CURRENT_PHASE"
+      echo "   Valid phases: clarify, breakdown, implement, deliver, complete"
+      exit 1
+      ;;
+  esac
+done
 ```
 
 ### Phase 1: CLARIFY (Interactive)
 
-```markdown
-🚀 Starting Ralph-dev...
+**Function: execute_phase_1_clarify**
 
-Requirement: $USER_REQUIREMENT
-Mode: Full autonomous development
-Phases: 5 (Clarify → Breakdown → Implement → Heal → Deliver)
-
-Phase 1/5: Clarifying requirements...
-```
-
-Delegate to `phase-1-clarify` skill:
-
-```
-Use the Task tool to invoke:
-  subagent_type: "phase-1-clarify"
-  prompt: "User requirement: $USER_REQUIREMENT
-
-Execute requirement clarification:
-1. Ask 3-5 structured questions with lettered options (A, B, C, D)
-2. Generate detailed PRD from answers
-3. Save to .claude/ralph-dev/prd.md
-4. Return completion signal"
-  context: fork
-```
-
-**Wait for** user to answer all questions.
-
-**Expected output:**
-```yaml
----PHASE RESULT---
-phase: clarify
-status: complete
-output_file: .claude/ralph-dev/prd.md
-next_phase: breakdown
----END PHASE RESULT---
-```
-
-**Update state:**
 ```bash
-ralph-dev state update --phase breakdown
+execute_phase_1_clarify() {
+  echo "🚀 Starting Ralph-dev..."
+  echo ""
+  echo "Requirement: $USER_REQUIREMENT"
+  echo "Mode: Full autonomous development"
+  echo "Phases: 5 (Clarify → Breakdown → Implement → Heal → Deliver)"
+  echo ""
+  echo "Phase 1/5: Clarifying requirements..."
+  echo ""
+
+  # Delegate to phase-1-clarify skill using Task tool
+  # NOTE: This is placeholder - actual implementation uses Task tool
+  # Use the Task tool to invoke:
+  #   subagent_type: "phase-1-clarify"
+  #   prompt: "User requirement: $USER_REQUIREMENT
+  #
+  #   Execute requirement clarification:
+  #   1. Ask 3-5 structured questions with lettered options
+  #   2. Generate detailed PRD from answers
+  #   3. Save to .ralph-dev/prd.md
+  #   4. Return completion signal"
+
+  # Wait for phase-1-clarify to complete
+  # Expected output:
+  # ---PHASE RESULT---
+  # phase: clarify
+  # status: complete
+  # output_file: .ralph-dev/prd.md
+  # next_phase: breakdown
+  # ---END PHASE RESULT---
+
+  # Verify PRD was created
+  if [ ! -f ".ralph-dev/prd.md" ]; then
+    echo "❌ ERROR: Phase 1 did not create PRD file"
+    exit 1
+  fi
+
+  # Update state to breakdown (phase completed successfully)
+  ralph-dev state update --phase breakdown
+  echo "✅ Phase 1 complete: PRD generated"
+  echo ""
+}
 ```
 
 ### Phase 2: BREAKDOWN (Autonomous)
 
-```markdown
-Phase 2/5: Breaking down into tasks...
-```
+**Function: execute_phase_2_breakdown**
 
-Read PRD:
 ```bash
-PRD=$(cat .ralph-dev/prd.md)
-```
+execute_phase_2_breakdown() {
+  echo "Phase 2/5: Breaking down into tasks..."
+  echo ""
 
-Delegate to `phase-2-breakdown` skill:
+  # Read PRD (context-compression safe - from file)
+  if [ ! -f ".ralph-dev/prd.md" ]; then
+    echo "❌ ERROR: PRD file not found (.ralph-dev/prd.md)"
+    exit 1
+  fi
 
-```
-Use the Task tool to invoke:
-  subagent_type: "phase-2-breakdown"
-  prompt: "PRD Content:
-$PRD
+  PRD=$(cat .ralph-dev/prd.md)
 
-Execute task breakdown:
-1. Extract user stories from PRD
-2. Convert each story to 1-3 atomic tasks (max 30 min each)
-3. Use CLI to create tasks: ralph-dev tasks create
-4. CLI will create modular markdown files in .ralph-dev/tasks/
-5. Assign dependencies and priorities
-6. Return task summary"
-  context: fork
-```
+  # Delegate to phase-2-breakdown skill using Task tool
+  # NOTE: This is placeholder - actual implementation uses Task tool
+  # Use the Task tool to invoke:
+  #   subagent_type: "phase-2-breakdown"
+  #   prompt: "PRD Content: $PRD
+  #
+  #   Execute task breakdown:
+  #   1. Extract user stories from PRD
+  #   2. Convert each story to 1-3 atomic tasks (max 30 min each)
+  #   3. Use CLI to create tasks: ralph-dev tasks create
+  #   4. Assign dependencies and priorities
+  #   5. Return task summary"
 
-**Show task plan to user:**
+  # Wait for phase-2-breakdown to complete
+  # phase-2-breakdown will create .ralph-dev/tasks/*.md files via CLI
 
-```markdown
-📋 Task Plan ($N tasks, est. $HOURS hours)
+  # Verify tasks were created (context-compression safe - query CLI)
+  TASK_LIST_RESULT=$(ralph-dev tasks list --json)
 
-1. setup.scaffold        - Initialize project structure (15 min)
-2. setup.dependencies    - Install dependencies (10 min)
-3. auth.login.ui         - Create login form (20 min)
-...
+  if ! echo "$TASK_LIST_RESULT" | jq -e '.success == true' > /dev/null 2>&1; then
+    echo "❌ ERROR: Phase 2 did not create tasks"
+    exit 1
+  fi
 
-Approve? (yes/no/modify)
-```
+  TOTAL_TASKS=$(echo "$TASK_LIST_RESULT" | jq -r '.data.total // 0')
 
-**Handle user response:**
-- `yes` → Proceed to Phase 3
-- `no` → Exit with "Plan rejected by user"
-- `modify` → Wait for user to edit `.claude/ralph-dev/tasks.json`, then proceed
+  if [ "$TOTAL_TASKS" -eq 0 ]; then
+    echo "❌ ERROR: Phase 2 created 0 tasks"
+    exit 1
+  fi
 
-**Update state:**
-```bash
-# Get task count from CLI
-TASK_LIST=$(ralph-dev tasks list --json)
-TOTAL_TASKS=$(echo "$TASK_LIST"
+  echo "✅ Phase 2 complete: $TOTAL_TASKS tasks created"
+  echo ""
 
-# Update state using CLI
-ralph-dev state update --phase implement
+  # phase-2-breakdown will handle user approval internally
+  # and update state to "implement" when approved
+  # This function just verifies completion
+}
 ```
 
 ### Phase 3: IMPLEMENT (Autonomous Loop)
 
-```markdown
-Phase 3/5: Implementing tasks...
-```
+**Function: execute_phase_3_implement**
 
-Delegate to `phase-3-implement` skill (which handles Phase 4 healing internally):
-
-```
-Use the Task tool to invoke:
-  subagent_type: "phase-3-implement"
-  prompt: "Use ralph-dev to manage tasks
-
-Execute implementation loop:
-1. Get next task: ralph-dev tasks next --json
-2. For each pending task:
-   a. Mark as started: ralph-dev tasks start <task_id>
-   b. Spawn implementer agent (fresh context)
-   c. If error → spawn debugger agent (auto-heal)
-   d. Mark complete: ralph-dev tasks done <task_id> --duration '4m 32s'
-   e. Or mark failed: ralph-dev tasks fail <task_id> --reason 'error message'
-   f. Show progress update
-3. Continue until all tasks processed
-4. Return summary"
-  context: fork
-```
-
-**Progress updates will show:**
-```
-✅ auth.login.ui completed (3/15)
-   Duration: 4m 32s
-   Tests: 8/8 passed
-   Next: auth.login.api
-
-⚠️  Error in auth.login.api
-    Module 'bcrypt' not found
-🔧 Auto-healing...
-✅ Healed successfully (1m 12s)
-
-📊 Progress Summary (40% complete)
-   ✅ Completed: 6/15 tasks
-   ⏱️  Estimated remaining: 27m
-   🔧 Auto-fixes: 2 errors healed
-```
-
-**Expected output:**
-```yaml
----PHASE RESULT---
-phase: implement
-status: complete
-completed: [list of task IDs]
-failed: [list of failed task IDs with reasons]
-autoFixes: 2
-next_phase: deliver
----END PHASE RESULT---
-```
-
-**Update state:**
 ```bash
-ralph-dev state update --phase deliver
+execute_phase_3_implement() {
+  echo "Phase 3/5: Implementing tasks..."
+  echo ""
+
+  # Delegate to phase-3-implement skill using Task tool
+  # NOTE: phase-3-implement handles Phase 4 (healing) internally
+  # NOTE: This is placeholder - actual implementation uses Task tool
+  # Use the Task tool to invoke:
+  #   subagent_type: "phase-3-implement"
+  #   prompt: "Use ralph-dev CLI to manage tasks
+  #
+  #   Execute implementation loop:
+  #   1. Get next task: ralph-dev tasks next --json
+  #   2. For each pending task:
+  #      a. Mark as started: ralph-dev tasks start <task_id>
+  #      b. Spawn implementer agent (fresh context)
+  #      c. If error → invoke phase-4-heal (auto-heal)
+  #      d. Mark complete: ralph-dev tasks done <task_id>
+  #      e. Or mark failed: ralph-dev tasks fail <task_id>
+  #      f. Show progress update
+  #   3. Continue until all tasks processed
+  #   4. Return summary"
+
+  # Wait for phase-3-implement to complete
+  # phase-3-implement is 100% context-compression resilient
+  # It will update state to "deliver" when done
+
+  # Verify implementation completed (context-compression safe - query CLI)
+  FINAL_STATS=$(ralph-dev tasks list --json)
+  TOTAL_TASKS=$(echo "$FINAL_STATS" | jq -r '.data.total // 0')
+  COMPLETED=$(echo "$FINAL_STATS" | jq -r '.data.completed // 0')
+  FAILED=$(echo "$FINAL_STATS" | jq -r '.data.failed // 0')
+
+  echo "✅ Phase 3 complete: $COMPLETED/$TOTAL_TASKS tasks completed, $FAILED failed"
+  echo ""
+
+  # phase-3-implement updates state to "deliver" automatically
+}
 ```
 
 ### Phase 5: DELIVER (Final Verification)
 
-```markdown
-Phase 5/5: Delivering with quality gates...
-```
+**Function: execute_phase_5_deliver**
 
-Delegate to `phase-5-deliver` skill:
+```bash
+execute_phase_5_deliver() {
+  echo "Phase 5/5: Delivering with quality gates..."
+  echo ""
 
-```
-Use the Task tool to invoke:
-  subagent_type: "phase-5-deliver"
-  prompt: "Get state: ralph-dev state get --json
+  # Delegate to phase-5-deliver skill using Task tool
+  # NOTE: This is placeholder - actual implementation uses Task tool
+  # Use the Task tool to invoke:
+  #   subagent_type: "phase-5-deliver"
+  #   prompt: "Execute delivery workflow:
+  #
+  #   1. Get language config: ralph-dev detect --json
+  #   2. Run quality gates (tests, lint, build)
+  #   3. Create git commit
+  #   4. Create pull request
+  #   5. Return delivery summary"
 
-Execute delivery workflow:
-1. Get language config: ralph-dev detect --json
-2. Run quality gates using language-specific commands:
-   - Run verification commands from languageConfig.verifyCommands
-   - Example for TypeScript: npx tsc --noEmit, npm run lint, npm test, npm run build
-3. Create git commit with structured message
-4. Create pull request with detailed description
-5. Return delivery summary"
-  context: fork
-```
+  # Wait for phase-5-deliver to complete
+  # phase-5-deliver will update state to "complete" when done
 
-**Quality gates checklist:**
-```
-🎯 Pre-Delivery Checklist
+  # Verify delivery completed
+  CURRENT_STATE=$(ralph-dev state get --json)
+  FINAL_PHASE=$(echo "$CURRENT_STATE" | jq -r '.phase')
 
-✅ All tasks completed (15/15)
-✅ All tests passing (124/124)
-✅ TypeScript check passed
-✅ ESLint passed (0 errors)
-✅ Build successful
-✅ Code review passed (2-stage)
-```
-
-**Expected output:**
-```yaml
----PHASE RESULT---
-phase: deliver
-status: success
-commit_hash: abc123f
-pr_number: 456
-pr_url: https://github.com/mylukin/ralph-dev/pull/456
-stats:
-  completed: 15
-  total: 15
-  tests_passed: 124
-  coverage: 87
-  duration: "47m 23s"
-  auto_fixes: 2
----END PHASE RESULT---
+  if [ "$FINAL_PHASE" = "complete" ]; then
+    echo "✅ Phase 5 complete: Delivery successful"
+    echo ""
+  else
+    echo "❌ ERROR: Phase 5 did not complete successfully"
+    echo "   Current phase: $FINAL_PHASE"
+    exit 1
+  fi
+}
 ```
 
 ### Final Summary

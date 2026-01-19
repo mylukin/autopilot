@@ -11,8 +11,6 @@ user-invocable: true
 
 Autonomously detect the programming language, framework, build tools, and verification commands for ANY project.
 
-自主检测任何项目的编程语言、框架、构建工具和验证命令。
-
 ## When to Use
 
 - User asks: "What language is this project?"

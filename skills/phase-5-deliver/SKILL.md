@@ -11,8 +11,6 @@ user-invocable: false
 
 Run final quality gates, perform two-stage code review (spec compliance + code quality), create commits, and generate pull requests for completed work.
 
-运行最终质量检查，执行两阶段代码审查（规范合规性 + 代码质量），创建 commit 并为完成的工作生成 pull request。
-
 ## When to Use
 
 Invoked by dev-orchestrator as Phase 5, after Phase 3 (Implement) completes all tasks.
@@ -44,15 +42,17 @@ echo ""
 echo "📊 Gathering implementation summary..."
 echo ""
 
-# Get all completed tasks
-COMPLETED_TASKS=$(ralph-dev tasks list --status passing --json)
-TASK_COUNT=$(echo "$COMPLETED_TASKS"
+# Query task stats from CLI (context-compression safe - query each time needed)
+TASK_STATS=$(ralph-dev tasks list --json)
+TASK_COUNT=$(echo "$TASK_STATS" | jq -r '.data.total // 0')
+COMPLETED_COUNT=$(echo "$TASK_STATS" | jq -r '.data.completed // 0')
 
-echo "✅ Completed Tasks: $TASK_COUNT"
+echo "✅ Completed Tasks: $COMPLETED_COUNT/$TASK_COUNT"
 echo ""
 
-# List task IDs and descriptions
-echo "$COMPLETED_TASKS" | jq -r '.[]
+# List completed task IDs and descriptions (query fresh)
+COMPLETED_TASKS=$(ralph-dev tasks list --status completed --json)
+echo "$COMPLETED_TASKS" | jq -r '.data.tasks[]? | "  • \(.id) - \(.description)"' 2>/dev/null || echo "  (No tasks found)"
 echo ""
 ```
 
@@ -190,7 +190,8 @@ echo "📋 Stage 1: Spec Compliance Check"
 echo "   (Verifying implementation meets acceptance criteria)"
 echo ""
 
-SPEC_REVIEW_RESULT=$(perform_spec_compliance_check "$COMPLETED_TASKS")
+# Functions now query CLI internally (context-compression safe)
+SPEC_REVIEW_RESULT=$(perform_spec_compliance_check)
 SPEC_REVIEW_STATUS=$?
 
 if [ $SPEC_REVIEW_STATUS -eq 0 ]; then
@@ -235,8 +236,8 @@ echo ""
 # Get list of modified/new files
 git status --short
 
-# Generate detailed commit message with task info
-COMMIT_MSG=$(generate_detailed_commit_message "$COMPLETED_TASKS")
+# Generate detailed commit message (queries CLI internally - context-compression safe)
+COMMIT_MSG=$(generate_detailed_commit_message)
 
 echo "Commit message:"
 echo "───────────────"
@@ -262,8 +263,8 @@ if [ $COMMIT_STATUS -eq 0 ]; then
   echo "✅ Commit created: $COMMIT_SHA"
   echo ""
 
-  # Update minimal progress file
-  update_progress_txt "$COMPLETED_TASKS" "$COMMIT_SHA"
+  # Update minimal progress file (queries CLI internally - context-compression safe)
+  update_progress_txt "$COMMIT_SHA"
 else
   echo "❌ Commit failed"
   return 1
@@ -290,7 +291,7 @@ if ! command -v gh &> /dev/null; then
 else
   # Check if we're on a feature branch
   CURRENT_BRANCH=$(git branch --show-current)
-  MAIN_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD
+  MAIN_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main")
 
   if [ "$CURRENT_BRANCH" = "$MAIN_BRANCH" ]; then
     echo "⚠️  Currently on main branch ($MAIN_BRANCH)"
@@ -298,9 +299,9 @@ else
     echo "   git checkout -b feature/ralph-dev-implementation"
     echo ""
   else
-    # Generate PR description
-    PR_TITLE=$(generate_pr_title "$COMPLETED_TASKS")
-    PR_BODY=$(generate_pr_body "$COMPLETED_TASKS" "$SPEC_REVIEW_RESULT" "$QUALITY_REVIEW_RESULT")
+    # Generate PR description (queries CLI internally - context-compression safe)
+    PR_TITLE=$(generate_pr_title)
+    PR_BODY=$(generate_pr_body "$SPEC_REVIEW_RESULT" "$QUALITY_REVIEW_RESULT")
 
     echo "PR Title: $PR_TITLE"
     echo ""
@@ -453,7 +454,8 @@ summary: |\
 
 ```bash
 perform_spec_compliance_check() {
-  local COMPLETED_TASKS=$1
+  # Query completed tasks from CLI (context-compression safe)
+  local COMPLETED_TASKS_JSON=$(ralph-dev tasks list --status completed --json)
 
   echo "Checking each task against its acceptance criteria..."
   echo ""
@@ -461,7 +463,7 @@ perform_spec_compliance_check() {
   ISSUES_FOUND=false
 
   # For each completed task
-  echo "$COMPLETED_TASKS" | jq -c '.[]'
+  echo "$COMPLETED_TASKS_JSON" | jq -c '.data.tasks[]?'
     TASK_ID=$(echo "$task"
     echo "   Checking $TASK_ID..."
 
@@ -547,20 +549,21 @@ perform_code_quality_check() {
 
 ```bash
 generate_detailed_commit_message() {
-  local COMPLETED_TASKS=$1
+  # Query completed tasks from CLI (context-compression safe)
+  local COMPLETED_TASKS=$(ralph-dev tasks list --status completed --json)
 
   # Create conventional commit format with details
-  TASK_COUNT=$(echo "$COMPLETED_TASKS"
+  TASK_COUNT=$(echo "$COMPLETED_TASKS" | jq -r '.data.total // 0')
 
   if [ "$TASK_COUNT" -eq 1 ]; then
     # Single task - detailed single commit
-    local TASK=$(echo "$COMPLETED_TASKS"
-    local ID=$(echo "$TASK"
-    local MODULE=$(echo "$TASK"
-    local DESC=$(echo "$TASK"
-    local DURATION=$(echo "$TASK"
-    local TEST_COUNT=$(echo "$TASK"
-    local COVERAGE=$(echo "$TASK"
+    local TASK=$(echo "$COMPLETED_TASKS" | jq -r '.data.tasks[0]')
+    local ID=$(echo "$TASK" | jq -r '.id // "unknown"')
+    local MODULE=$(echo "$TASK" | jq -r '.module // "core"')
+    local DESC=$(echo "$TASK" | jq -r '.description // "task implementation"')
+    local DURATION=$(echo "$TASK" | jq -r '.duration // "N/A"')
+    local TEST_COUNT=$(echo "$TASK" | jq -r '.testCount // 0')
+    local COVERAGE=$(echo "$TASK" | jq -r '.coverage // 0')
 
     cat <<EOF
 feat($MODULE): $DESC
@@ -570,20 +573,20 @@ Duration: $DURATION
 Tests: $TEST_COUNT passed, ${COVERAGE}% coverage
 
 Acceptance criteria:
-$(echo "$TASK" | jq -r '.acceptanceCriteria[]'
+$(echo "$TASK" | jq -r '.acceptanceCriteria[]? // empty')
 
 Files:
-$(git diff --cached --name-only
+$(git diff --cached --name-only)
 EOF
   else
     # Multiple tasks - batch commit
-    MODULES=$(echo "$COMPLETED_TASKS" | jq -r '.[].module' | sort -u
+    MODULES=$(echo "$COMPLETED_TASKS" | jq -r '.data.tasks[]? | .module // "core"' | sort -u | tr '\n' ',' | sed 's/,$//')
 
     cat <<EOF
 feat($MODULES): implement $TASK_COUNT tasks
 
 Tasks completed:
-$(echo "$COMPLETED_TASKS" | jq -r '.[]
+$(echo "$COMPLETED_TASKS" | jq -r '.data.tasks[]? | "- \(.id): \(.description)"')
 
 All tasks:
 - Acceptance criteria satisfied ✓
@@ -597,25 +600,26 @@ EOF
 
 ```bash
 update_progress_txt() {
-  local COMPLETED_TASKS=$1
-  local COMMIT_SHA=$2
+  local COMMIT_SHA=$1
+
+  # Query completed tasks from CLI (context-compression safe)
+  local COMPLETED_TASKS=$(ralph-dev tasks list --status completed --json)
 
   PROGRESS_FILE=".ralph-dev/progress.txt"
 
   # Append completed tasks to progress file
-  echo "$COMPLETED_TASKS" | jq -r '.[] | "\(.status
-    --arg commit "$COMMIT_SHA" >> "$PROGRESS_FILE"
+  echo "$COMPLETED_TASKS" | jq -r '.data.tasks[]? | "\(.status // "completed") | \(.id) | \(.description) | Commit: '"$COMMIT_SHA"'"' >> "$PROGRESS_FILE"
 
   # Update stats line
-  TOTAL=$(ralph-dev tasks list --json
-  DONE=$(ralph-dev tasks list --status completed --json
-  FAILED=$(ralph-dev tasks list --status failed --json
+  TOTAL=$(ralph-dev tasks list --json | jq -r '.data.total // 0')
+  DONE=$(ralph-dev tasks list --status completed --json | jq -r '.data.total // 0')
+  FAILED=$(ralph-dev tasks list --status failed --json | jq -r '.data.total // 0')
   PROGRESS=$((DONE * 100 / TOTAL))
 
   # Update stats (replace last Stats: line)
   sed -i.bak "/^## Stats/,/^$/c\\
 ## Stats\\
-Total: $TOTAL | Done: $DONE | Failed: $FAILED
+Total: $TOTAL | Done: $DONE | Failed: $FAILED | Progress: ${PROGRESS}%
 " "$PROGRESS_FILE"
 
   echo "✓ Progress file updated: $PROGRESS_FILE"
@@ -626,17 +630,18 @@ Total: $TOTAL | Done: $DONE | Failed: $FAILED
 
 ```bash
 generate_pr_title() {
-  local COMPLETED_TASKS=$1
+  # Query completed tasks from CLI (context-compression safe)
+  local COMPLETED_TASKS=$(ralph-dev tasks list --status completed --json)
 
-  TASK_COUNT=$(echo "$COMPLETED_TASKS"
+  TASK_COUNT=$(echo "$COMPLETED_TASKS" | jq -r '.data.total // 0')
 
   if [ "$TASK_COUNT" -eq 1 ]; then
     # Single task
-    echo "$(echo "$COMPLETED_TASKS"
+    echo "$(echo "$COMPLETED_TASKS" | jq -r '.data.tasks[0].description // "Task implementation"')"
   else
     # Multiple tasks
-    MODULES=$(echo "$COMPLETED_TASKS" | jq -r '.[].module'
-    MODULE_COUNT=$(echo "$MODULES"
+    MODULES=$(echo "$COMPLETED_TASKS" | jq -r '.data.tasks[]? | .module // "core"' | sort -u)
+    MODULE_COUNT=$(echo "$MODULES" | wc -l | tr -d ' ')
     echo "Implement $TASK_COUNT features across $MODULE_COUNT modules"
   fi
 }
@@ -646,9 +651,12 @@ generate_pr_title() {
 
 ```bash
 generate_pr_body() {
-  local COMPLETED_TASKS=$1
-  local SPEC_REVIEW_RESULT=$2
-  local QUALITY_REVIEW_RESULT=$3
+  local SPEC_REVIEW_RESULT=$1
+  local QUALITY_REVIEW_RESULT=$2
+
+  # Query completed tasks from CLI (context-compression safe)
+  local COMPLETED_TASKS=$(ralph-dev tasks list --status completed --json)
+  local TASK_COUNT=$(echo "$COMPLETED_TASKS" | jq -r '.data.total // 0')
 
   cat <<EOF
 ## Summary
@@ -657,7 +665,7 @@ Ralph-dev implementation of $TASK_COUNT tasks.
 
 ## Implemented Tasks
 
-$(echo "$COMPLETED_TASKS" | jq -r '.[]
+$(echo "$COMPLETED_TASKS" | jq -r '.data.tasks[]? | "- **\(.id)**: \(.description) (\(.duration // "N/A"))"')
 
 ## Quality Verification
 
@@ -680,7 +688,7 @@ fi)
 ## Test Plan
 
 All tasks include automated tests:
-$(echo "$COMPLETED_TASKS" | jq -r '.[]
+$(echo "$COMPLETED_TASKS" | jq -r '.data.tasks[]? | "- \(.id): \(.testCount // 0) tests, \(.coverage // 0)% coverage"')
 
 Run tests: \`npm test\` (or project-specific command)
 

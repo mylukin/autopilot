@@ -33,8 +33,6 @@ If you haven't completed Phase 1 (Root Cause Investigation), you CANNOT propose 
 
 **MANDATORY**: Must complete each phase before proceeding to next.
 
-> **强制性**：必须完成每个阶段才能进入下一个阶段。
-
 ### Phase 1: Root Cause Investigation (MANDATORY)
 
 ```bash
@@ -273,10 +271,46 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "🔧 Phase 4: Implementation"
 echo ""
 
+# ═══════════════════════════════════════════════════════
+# HEALING LOOP SAFETY (Context-Compression Resilient)
+# ═══════════════════════════════════════════════════════
 MAX_ATTEMPTS=3
 ATTEMPT=1
 
+# Time-based safety limit (context-compression safe)
+HEALING_START_TIME=$(date +%s)
+MAX_HEALING_DURATION=$((60 * 60))  # 1 hour max for all healing attempts
+
 while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+  # ═══════════════════════════════════════════════════════
+  # SAFETY CHECK: Time-based timeout (context-compression safe)
+  # ═══════════════════════════════════════════════════════
+  CURRENT_TIME=$(date +%s)
+  ELAPSED_TIME=$((CURRENT_TIME - HEALING_START_TIME))
+
+  if [ $ELAPSED_TIME -gt $MAX_HEALING_DURATION ]; then
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "⏱️  TIMEOUT: Healing exceeded $MAX_HEALING_DURATION seconds"
+    echo "   Elapsed: $(($ELAPSED_TIME / 60)) minutes"
+    echo "   This indicates healing is stuck or too complex"
+    echo ""
+
+    # Output failure result
+    echo "---HEALING RESULT---"
+    echo "task_id: $TASK_ID"
+    echo "status: failed"
+    echo "verification_passed: false"
+    echo "attempts: $ATTEMPT"
+    echo "fix_type: $FIX_TYPE"
+    echo "hypothesis: $HYPOTHESIS"
+    echo "notes: Healing timeout after $(($ELAPSED_TIME / 60)) minutes. Manual intervention required."
+    echo "---END HEALING RESULT---"
+    echo ""
+
+    return 1
+  fi
+
+  # Continue with healing attempt...
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo "Healing Attempt $ATTEMPT/$MAX_ATTEMPTS"
   echo ""
