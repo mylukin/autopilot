@@ -15,6 +15,8 @@ export interface TaskIndex {
     module: string;
     description: string;
     filePath?: string;
+    dependencies?: string[];
+    estimatedMinutes?: number;
   }>;
 }
 
@@ -64,6 +66,8 @@ export class IndexManager {
       module: task.module,
       description: task.description,
       filePath: filePath ? path.relative(path.dirname(this.indexPath), filePath) : undefined,
+      dependencies: task.dependencies,
+      estimatedMinutes: task.estimatedMinutes,
     };
 
     this.writeIndex(index);

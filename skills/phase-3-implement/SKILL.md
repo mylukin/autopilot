@@ -40,13 +40,26 @@ echo "✓ CLI initialized"
 echo ""
 ```
 
-### Step 1: Initialize Implementation Loop
+### Step 1: Initialize Implementation Loop (with JSON parsing)
 
 **CRITICAL: Verify total task count BEFORE starting loop.**
 
+> **关键：在开始循环前验证任务总数。**
+
 ```bash
-# Get total task count from index
-TOTAL_TASKS=$(ralph-dev tasks list --json
+# Get total task count from index using JSON output
+TASKS_RESULT=$(ralph-dev tasks list --json)
+
+# Parse JSON response and check success
+if ! echo "$TASKS_RESULT" | jq -e '.success == true' > /dev/null 2>&1; then
+  echo "❌ ERROR: Failed to get task list"
+  ERROR_MSG=$(echo "$TASKS_RESULT" | jq -r '.error.message' 2>&1 || echo "Unknown error")
+  echo "   Error: $ERROR_MSG"
+  exit 1
+fi
+
+# Extract total tasks from JSON
+TOTAL_TASKS=$(echo "$TASKS_RESULT" | jq -r '.data.total')
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🚀 Starting implementation of $TOTAL_TASKS tasks..."
@@ -85,14 +98,15 @@ while true; do
   fi
 
   # ═══════════════════════════════════════════
-  # STEP 1: Get next pending task
+  # STEP 1: Get next pending task with JSON parsing
   # ═══════════════════════════════════════════
-  TASK_JSON=$(ralph-dev tasks next --json 2>/dev/null)
+  TASK_RESULT=$(ralph-dev tasks next --json 2>/dev/null)
 
   # ═══════════════════════════════════════════
   # STEP 2: Check if loop should exit
   # ═══════════════════════════════════════════
-  if [ -z "$TASK_JSON" ] || echo "$TASK_JSON"
+  # Check if command succeeded and returned a task
+  if ! echo "$TASK_RESULT" | jq -e '.success == true and .data.task != null' > /dev/null 2>&1; then
     # No more tasks from CLI - VERIFY before exiting
 
     echo ""
@@ -100,11 +114,17 @@ while true; do
     echo "🔍 No more pending tasks. Verifying completion..."
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-    # Count tasks by status
-    PENDING_COUNT=$(ralph-dev tasks list --status pending --json 2>/dev/null
-    IN_PROGRESS_COUNT=$(ralph-dev tasks list --status in_progress --json 2>/dev/null
-    ACTUAL_COMPLETED=$(ralph-dev tasks list --status completed --json 2>/dev/null
-    ACTUAL_FAILED=$(ralph-dev tasks list --status failed --json 2>/dev/null
+    # Count tasks by status using JSON output
+    PENDING_RESULT=$(ralph-dev tasks list --status pending --json)
+    IN_PROGRESS_RESULT=$(ralph-dev tasks list --status in_progress --json)
+    COMPLETED_RESULT=$(ralph-dev tasks list --status completed --json)
+    FAILED_RESULT=$(ralph-dev tasks list --status failed --json)
+
+    # Parse JSON responses
+    PENDING_COUNT=$(echo "$PENDING_RESULT" | jq -r '.data.total // 0')
+    IN_PROGRESS_COUNT=$(echo "$IN_PROGRESS_RESULT" | jq -r '.data.total // 0')
+    ACTUAL_COMPLETED=$(echo "$COMPLETED_RESULT" | jq -r '.data.total // 0')
+    ACTUAL_FAILED=$(echo "$FAILED_RESULT" | jq -r '.data.total // 0')
 
     # Calculate totals
     ACCOUNTED_FOR=$((ACTUAL_COMPLETED + ACTUAL_FAILED))

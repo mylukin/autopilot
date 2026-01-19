@@ -84,21 +84,33 @@ For each user story or requirement, create 1-3 atomic tasks.
 - `auth.signup.api` (25 min) - Create signup API endpoint
 - `auth.signup.tests` (20 min) - Write unit & integration tests
 
-### Step 4: Create Task Files Using CLI
+### Step 4: Create Task Files Using CLI (Best Practices)
 
-For each task, create task files using the ralph-dev:
+For each task, create task files using the ralph-dev CLI with **JSON output and error handling**:
+
+> 对于每个任务，使用ralph-dev CLI创建任务文件，并使用**JSON输出和错误处理**：
 
 ```bash
-# Initialize tasks directory and index
-ralph-dev tasks init \
+# Initialize tasks directory and index with JSON output
+INIT_RESULT=$(ralph-dev tasks init \
   --project-goal "$(extract_goal_from_prd)" \
   --language "typescript" \
-  --framework "Next.js"
+  --framework "Next.js" \
+  --json 2>&1)
 
-# Create each task using CLI
+# Check initialization success
+if echo "$INIT_RESULT" | jq -e '.success == true' > /dev/null 2>&1; then
+  echo "✓ Tasks system initialized"
+else
+  echo "✗ Failed to initialize tasks"
+  echo "$INIT_RESULT" | jq -r '.error.message' 2>&1 || echo "$INIT_RESULT"
+  exit 1
+fi
+
+# Create each task using CLI with JSON output
 # Example for auth.signup.ui:
 
-ralph-dev tasks create \
+CREATE_RESULT=$(ralph-dev tasks create \
   --id "auth.signup.ui" \
   --module "auth" \
   --priority 1 \
@@ -112,23 +124,51 @@ ralph-dev tasks create \
   --criteria "Submit button disabled when form invalid" \
   --criteria "Component properly typed with TypeScript" \
   --criteria "Unit tests exist and pass (coverage >80%)" \
-  --test-pattern "tests/auth/SignupForm.test.*"
+  --test-pattern "tests/auth/SignupForm.test.*" \
+  --json 2>&1)
 
-# CLI will:
-# 1. Create .ralph-dev/tasks/auth/signup.ui.md with proper frontmatter
-# 2. Update .ralph-dev/tasks/index.json automatically
-# 3. Show confirmation with file location
+# Check creation success
+if echo "$CREATE_RESULT" | jq -e '.success == true' > /dev/null 2>&1; then
+  TASK_ID=$(echo "$CREATE_RESULT" | jq -r '.data.taskId // .data.id')
+  echo "✓ Task $TASK_ID created successfully"
+else
+  ERROR_MSG=$(echo "$CREATE_RESULT" | jq -r '.error.message' 2>&1 || echo "Unknown error")
+  echo "✗ Failed to create task: $ERROR_MSG"
+  # Continue with next task or handle error appropriately
+fi
 
 # For each subsequent task, repeat the create command with different parameters
 ```
 
-**Output:**
-```
-✅ Task auth.signup.ui created
-   Module: auth
-   Priority: 1
-   Estimated: 20 min
-   Location: .ralph-dev/tasks/auth/signup.ui.md
+**Best Practice: Use batch operations for better performance**
+
+> **最佳实践：使用批量操作以获得更好的性能**
+
+```bash
+# Alternative: Create multiple tasks in a batch operation (10x faster)
+# Build task operations array
+OPERATIONS='[]'
+
+# Add auth.signup.ui task
+OPERATIONS=$(echo "$OPERATIONS" | jq '. + [{
+  "action": "create",
+  "taskId": "auth.signup.ui",
+  "module": "auth",
+  "priority": 1,
+  "estimatedMinutes": 20,
+  "description": "Create signup form component",
+  "criteria": [
+    "Component exists at src/components/SignupForm.tsx",
+    "Form has email, password, confirmPassword fields",
+    "Form validates email format"
+  ]
+}]')
+
+# Add more tasks...
+# (repeat for other tasks)
+
+# Execute batch creation (when available)
+# ralph-dev tasks batch-create --operations "$OPERATIONS" --json
 ```
 
 **Helper function to extract goal from PRD:**
@@ -226,9 +266,25 @@ Do you approve this task breakdown?
 
 Before asking, analyze task breakdown quality to determine which option to recommend:
 
+> 在询问前，分析任务分解质量以确定推荐哪个选项：
+
 ```bash
-# Analyze task breakdown quality
-TOTAL_TASKS=$(ralph-dev tasks list --json | jq 'length')
+# Analyze task breakdown quality using JSON output
+TASKS_JSON=$(ralph-dev tasks list --json)
+
+# Check if command succeeded
+if ! echo "$TASKS_JSON" | jq -e '.success == true' > /dev/null 2>&1; then
+  echo "✗ Failed to list tasks"
+  exit 1
+fi
+
+# Extract task metrics
+TOTAL_TASKS=$(echo "$TASKS_JSON" | jq -r '.data.total')
+MAX_ESTIMATE=$(echo "$TASKS_JSON" | jq -r '[.data.tasks[].estimatedMinutes // 0] | max')
+
+echo "📊 Task breakdown analysis:"
+echo "   Total tasks: $TOTAL_TASKS"
+echo "   Max estimate: $MAX_ESTIMATE min"
 
 # Check if all tasks have clear acceptance criteria
 ALL_HAVE_CRITERIA=true
@@ -239,18 +295,18 @@ for task_file in .ralph-dev/tasks/*/*.md; do
   fi
 done
 
-# Check if all tasks are reasonably sized (<30 min)
+# Determine which option to recommend
 REALISTIC_SIZES=true
-MAX_ESTIMATE=$(ralph-dev tasks list --json | jq '[.[].estimatedMinutes] | max')
 if [ "$MAX_ESTIMATE" -gt 30 ]; then
   REALISTIC_SIZES=false
 fi
 
-# Determine which option to recommend
 if [ "$ALL_HAVE_CRITERIA" = true ] && [ "$REALISTIC_SIZES" = true ] && [ "$TOTAL_TASKS" -lt 50 ]; then
   RECOMMENDED_LABEL="Yes, proceed (Recommended)"
+  echo "   Quality: ✓ High (recommend proceeding)"
 else
   RECOMMENDED_LABEL="Modify first (Recommended)"
+  echo "   Quality: ⚠ Needs review"
 fi
 ```
 
@@ -293,7 +349,9 @@ Use AskUserQuestion tool with proper JSON structure:
 - ✅ `header` is 8 characters (within 12-char limit)
 - ✅ Clear descriptions explaining what happens next
 
-### Step 7: Handle User Response
+### Step 7: Handle User Response (with Error Handling)
+
+> ### 第7步：处理用户响应（带错误处理）
 
 ```bash
 USER_RESPONSE="$ANSWER"
@@ -301,18 +359,38 @@ USER_RESPONSE="$ANSWER"
 case "$USER_RESPONSE" in
   "Yes, proceed")
     echo "✅ Task breakdown approved"
-    ralph-dev state update --phase implement
+
+    # Update state with JSON output and error handling
+    UPDATE_RESULT=$(ralph-dev state update --phase implement --json)
+
+    if echo "$UPDATE_RESULT" | jq -e '.success == true' > /dev/null 2>&1; then
+      echo "✓ State updated to implement phase"
+    else
+      ERROR_MSG=$(echo "$UPDATE_RESULT" | jq -r '.error.message')
+      echo "✗ Failed to update state: $ERROR_MSG"
+      exit 1
+    fi
     ;;
+
   "Modify first")
     echo "⏸️  Paused for manual task editing"
     echo "📝 Edit files in: .ralph-dev/tasks/"
     echo "▶️  Resume with: /ralph-dev resume"
-    ralph-dev state update --phase breakdown
+
+    # Keep state at breakdown phase
+    ralph-dev state update --phase breakdown --json > /dev/null
     exit 0
     ;;
+
   "Cancel")
     echo "❌ Ralph-dev cancelled by user"
-    ralph-dev state clear
+
+    # Clear state with confirmation
+    CLEAR_RESULT=$(ralph-dev state clear --json)
+
+    if echo "$CLEAR_RESULT" | jq -e '.success == true' > /dev/null 2>&1; then
+      echo "✓ State cleared"
+    fi
     exit 1
     ;;
 esac

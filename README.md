@@ -402,6 +402,37 @@ npm run build
 - Agents: Autonomous specialized agents (language detector)
 - CLI: TypeScript binary for state/task management
 
+### CLI Best Practices for AI Agents
+
+**Important**: When calling the ralph-dev CLI from skills or agents, follow these best practices:
+
+✅ **Always use `--json` flag** for structured output
+✅ **Parse JSON responses** and check `.success` field
+✅ **Handle errors gracefully** using `.error.code` and `.error.recoverable`
+✅ **Use batch operations** for bulk updates (10x faster)
+✅ **Use filters** to reduce data transfer
+✅ **Check exit codes** for programmatic error handling
+
+**Example**:
+```bash
+# Get task with error handling
+RESULT=$(ralph-dev tasks next --json)
+
+if echo "$RESULT" | jq -e '.success == true' > /dev/null; then
+  TASK_ID=$(echo "$RESULT" | jq -r '.data.task.id')
+  echo "Next task: $TASK_ID"
+else
+  ERROR=$(echo "$RESULT" | jq -r '.error.message')
+  echo "Error: $ERROR"
+  exit 1
+fi
+```
+
+**Documentation**:
+- 📘 [CLI Best Practices Guide](skills/CLI_BEST_PRACTICES.md)
+- 📋 [CLI Improvements Reference](CLI_IMPROVEMENTS.md)
+- 📝 [Documentation Updates Summary](DOCUMENTATION_UPDATES.md)
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.

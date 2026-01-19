@@ -6,6 +6,9 @@ import chalk from 'chalk';
 import { TaskParser, Task } from '../core/task-parser';
 import { TaskWriter } from '../core/task-writer';
 import { IndexManager } from '../core/index-manager';
+import { ExitCode } from '../core/exit-codes';
+import { handleError, Errors } from '../core/error-handler';
+import { successResponse, outputResponse } from '../core/response-wrapper';
 
 export function registerTaskCommands(program: Command, workspaceDir: string): void {
   const tasksDir = path.join(workspaceDir, '.ralph-dev', 'tasks');
@@ -83,35 +86,103 @@ export function registerTaskCommands(program: Command, workspaceDir: string): vo
   // List all tasks
   tasks
     .command('list')
-    .description('List all tasks')
-    .option('-s, --status <status>', 'Filter by status')
+    .description('List all tasks with advanced filtering')
+    .option('-s, --status <status>', 'Filter by status (pending|in_progress|completed|failed)')
+    .option('-m, --module <module>', 'Filter by module name')
+    .option('-p, --priority <priority>', 'Filter by priority level')
+    .option('--has-dependencies', 'Only show tasks with dependencies')
+    .option('--ready', 'Only show tasks with satisfied dependencies')
+    .option('--limit <n>', 'Limit number of results', '100')
+    .option('--offset <n>', 'Skip first n results', '0')
+    .option('--sort <field>', 'Sort by field (priority|status|estimatedMinutes)', 'priority')
     .option('--json', 'Output as JSON')
     .action((options) => {
-      const index = indexManager.readIndex();
+      try {
+        const index = indexManager.readIndex();
+        let taskList = Object.entries(index.tasks);
 
-      let taskList = Object.entries(index.tasks);
+        // Apply filters
+        if (options.status) {
+          taskList = taskList.filter(([, task]) => task.status === options.status);
+        }
 
-      if (options.status) {
-        taskList = taskList.filter(([, task]) => task.status === options.status);
-      }
+        if (options.module) {
+          taskList = taskList.filter(([, task]) => task.module === options.module);
+        }
 
-      taskList.sort(([, a], [, b]) => a.priority - b.priority);
+        if (options.priority) {
+          const priority = parseInt(options.priority);
+          taskList = taskList.filter(([, task]) => task.priority === priority);
+        }
 
-      if (options.json) {
-        console.log(JSON.stringify(taskList.map(([id, task]) => ({ id, ...task })), null, 2));
-      } else {
-        console.log(chalk.bold('Tasks:'));
-        taskList.forEach(([id, task]) => {
-          const statusColor =
-            task.status === 'completed' ? 'green' :
-              task.status === 'in_progress' ? 'yellow' :
-                task.status === 'failed' ? 'red' : 'gray';
-
-          console.log(
-            `  ${chalk[statusColor](`[${task.status}]`)} ` +
-            `${chalk.cyan(id)} (P${task.priority}) - ${task.description}`
+        if (options.hasDependencies) {
+          taskList = taskList.filter(([, task]) =>
+            task.dependencies && task.dependencies.length > 0
           );
+        }
+
+        if (options.ready) {
+          taskList = taskList.filter(([id, task]) => {
+            if (!task.dependencies || task.dependencies.length === 0) {
+              return true;
+            }
+            return task.dependencies.every(depId => {
+              const depTask = index.tasks[depId];
+              return depTask && depTask.status === 'completed';
+            });
+          });
+        }
+
+        // Sorting
+        switch (options.sort) {
+          case 'priority':
+            taskList.sort(([, a], [, b]) => a.priority - b.priority);
+            break;
+          case 'status':
+            taskList.sort(([, a], [, b]) => a.status.localeCompare(b.status));
+            break;
+          case 'estimatedMinutes':
+            taskList.sort(([, a], [, b]) => (a.estimatedMinutes || 0) - (b.estimatedMinutes || 0));
+            break;
+        }
+
+        // Pagination
+        const offset = parseInt(options.offset);
+        const limit = parseInt(options.limit);
+        const total = taskList.length;
+        taskList = taskList.slice(offset, offset + limit);
+
+        const response = successResponse({
+          total,
+          offset,
+          limit,
+          returned: taskList.length,
+          tasks: taskList.map(([id, task]) => ({ id, ...task })),
         });
+
+        outputResponse(response, options.json, (data) => {
+          console.log(chalk.bold(`Tasks (${data.returned} of ${data.total}):`));
+          taskList.forEach(([id, task]) => {
+            const statusColor =
+              task.status === 'completed' ? 'green' :
+                task.status === 'in_progress' ? 'yellow' :
+                  task.status === 'failed' ? 'red' : 'gray';
+
+            console.log(
+              `  ${chalk[statusColor](`[${task.status}]`)} ` +
+              `${chalk.cyan(id)} (P${task.priority}) - ${task.description}`
+            );
+          });
+
+          if (data.total > data.returned) {
+            console.log(chalk.gray(`\n  Showing ${data.offset + 1}-${data.offset + data.returned} of ${data.total}`));
+            console.log(chalk.gray(`  Use --offset and --limit for pagination`));
+          }
+        });
+
+        process.exit(ExitCode.SUCCESS);
+      } catch (error) {
+        handleError(Errors.fileSystemError('Failed to list tasks', error), options.json);
       }
     });
 
@@ -341,22 +412,79 @@ export function registerTaskCommands(program: Command, workspaceDir: string): vo
     .command('done <taskId>')
     .description('Mark task as completed')
     .option('-d, --duration <duration>', 'Task duration (e.g., "4m 32s")')
+    .option('--json', 'Output as JSON')
+    .option('--dry-run', 'Preview changes without executing')
     .action((taskId, options) => {
-      const filePath = indexManager.getTaskFilePath(taskId);
+      try {
+        const filePath = indexManager.getTaskFilePath(taskId);
 
-      if (!filePath) {
-        console.error(chalk.red(`Task not found: ${taskId}`));
-        process.exit(1);
+        if (!filePath) {
+          handleError(Errors.taskNotFound(taskId), options.json);
+        }
+
+        const task = TaskParser.parseTaskFile(filePath);
+
+        // Dry-run mode
+        if (options.dryRun) {
+          const response = successResponse({
+            dryRun: true,
+            wouldUpdate: {
+              taskId,
+              currentStatus: task.status,
+              newStatus: 'completed',
+              affectedFiles: [filePath],
+            },
+          });
+          outputResponse(response, options.json, (data) => {
+            console.log(chalk.cyan('🔍 Dry-run mode (no changes will be made)'));
+            console.log(`  Task: ${taskId}`);
+            console.log(`  Current status: ${data.wouldUpdate.currentStatus}`);
+            console.log(`  New status: ${data.wouldUpdate.newStatus}`);
+          });
+          process.exit(ExitCode.SUCCESS);
+          return;
+        }
+
+        // Idempotent: Already completed is not an error
+        if (task.status === 'completed') {
+          const response = successResponse({
+            taskId,
+            status: 'completed',
+            alreadyCompleted: true,
+            message: 'Task already completed',
+          });
+          outputResponse(response, options.json, (data) => {
+            console.log(chalk.yellow(`⚠ Task ${taskId} is already completed`));
+          });
+          process.exit(ExitCode.SUCCESS);
+          return;
+        }
+
+        TaskWriter.updateTaskStatus(filePath, 'completed');
+        indexManager.updateTaskStatus(taskId, 'completed');
+
+        if (options.duration) {
+          TaskWriter.appendNotes(filePath, `Completed in ${options.duration}`);
+        }
+
+        const response = successResponse({
+          taskId,
+          status: 'completed',
+          previousStatus: task.status,
+          duration: options.duration,
+        });
+
+        outputResponse(response, options.json, (data) => {
+          console.log(chalk.green(`✓ Task ${data.taskId} marked as completed`));
+          if (data.duration) {
+            console.log(`  Duration: ${data.duration}`);
+          }
+        });
+
+        process.exit(ExitCode.SUCCESS);
+      } catch (error) {
+        handleError(Errors.fileSystemError('Failed to mark task as done', error), options.json);
       }
-
-      TaskWriter.updateTaskStatus(filePath, 'completed');
-      indexManager.updateTaskStatus(taskId, 'completed');
-
-      if (options.duration) {
-        TaskWriter.appendNotes(filePath, `Completed in ${options.duration}`);
-      }
-
-      console.log(chalk.green(`✓ Task ${taskId} marked as completed`));
     });
 
   // Mark task as failed
@@ -364,36 +492,253 @@ export function registerTaskCommands(program: Command, workspaceDir: string): vo
     .command('fail <taskId>')
     .description('Mark task as failed')
     .requiredOption('-r, --reason <reason>', 'Failure reason')
+    .option('--json', 'Output as JSON')
+    .option('--dry-run', 'Preview changes without executing')
     .action((taskId, options) => {
-      const filePath = indexManager.getTaskFilePath(taskId);
+      try {
+        const filePath = indexManager.getTaskFilePath(taskId);
 
-      if (!filePath) {
-        console.error(chalk.red(`Task not found: ${taskId}`));
-        process.exit(1);
+        if (!filePath) {
+          handleError(Errors.taskNotFound(taskId), options.json);
+        }
+
+        const task = TaskParser.parseTaskFile(filePath);
+
+        // Dry-run mode
+        if (options.dryRun) {
+          const response = successResponse({
+            dryRun: true,
+            wouldUpdate: {
+              taskId,
+              currentStatus: task.status,
+              newStatus: 'failed',
+              reason: options.reason,
+              affectedFiles: [filePath],
+            },
+          });
+          outputResponse(response, options.json, (data) => {
+            console.log(chalk.cyan('🔍 Dry-run mode (no changes will be made)'));
+            console.log(`  Task: ${taskId}`);
+            console.log(`  Current status: ${data.wouldUpdate.currentStatus}`);
+            console.log(`  New status: ${data.wouldUpdate.newStatus}`);
+            console.log(`  Reason: ${data.wouldUpdate.reason}`);
+          });
+          process.exit(ExitCode.SUCCESS);
+          return;
+        }
+
+        // Idempotent: Already failed is acceptable (update reason)
+        TaskWriter.updateTaskStatus(filePath, 'failed');
+        indexManager.updateTaskStatus(taskId, 'failed');
+        TaskWriter.appendNotes(filePath, `Failed: ${options.reason}`);
+
+        const response = successResponse({
+          taskId,
+          status: 'failed',
+          previousStatus: task.status,
+          reason: options.reason,
+          alreadyFailed: task.status === 'failed',
+        });
+
+        outputResponse(response, options.json, (data) => {
+          if (data.alreadyFailed) {
+            console.log(chalk.yellow(`⚠ Task ${data.taskId} was already failed, reason updated`));
+          } else {
+            console.log(chalk.red(`✗ Task ${data.taskId} marked as failed`));
+          }
+          console.log(`  Reason: ${data.reason}`);
+        });
+
+        process.exit(ExitCode.SUCCESS);
+      } catch (error) {
+        handleError(Errors.fileSystemError('Failed to mark task as failed', error), options.json);
       }
-
-      TaskWriter.updateTaskStatus(filePath, 'failed');
-      indexManager.updateTaskStatus(taskId, 'failed');
-      TaskWriter.appendNotes(filePath, `Failed: ${options.reason}`);
-
-      console.log(chalk.red(`✗ Task ${taskId} marked as failed`));
     });
 
   // Mark task as in progress
   tasks
     .command('start <taskId>')
     .description('Mark task as in progress')
-    .action((taskId) => {
-      const filePath = indexManager.getTaskFilePath(taskId);
+    .option('--json', 'Output as JSON')
+    .option('--dry-run', 'Preview changes without executing')
+    .action((taskId, options) => {
+      try {
+        const filePath = indexManager.getTaskFilePath(taskId);
 
-      if (!filePath) {
-        console.error(chalk.red(`Task not found: ${taskId}`));
-        process.exit(1);
+        if (!filePath) {
+          handleError(Errors.taskNotFound(taskId), options.json);
+        }
+
+        const task = TaskParser.parseTaskFile(filePath);
+
+        // Dry-run mode
+        if (options.dryRun) {
+          const response = successResponse({
+            dryRun: true,
+            wouldUpdate: {
+              taskId,
+              currentStatus: task.status,
+              newStatus: 'in_progress',
+              affectedFiles: [filePath],
+            },
+          });
+          outputResponse(response, options.json, (data) => {
+            console.log(chalk.cyan('🔍 Dry-run mode (no changes will be made)'));
+            console.log(`  Task: ${taskId}`);
+            console.log(`  Current status: ${data.wouldUpdate.currentStatus}`);
+            console.log(`  New status: ${data.wouldUpdate.newStatus}`);
+          });
+          process.exit(ExitCode.SUCCESS);
+          return;
+        }
+
+        // Idempotent: Already in progress is not an error
+        if (task.status === 'in_progress') {
+          const response = successResponse({
+            taskId,
+            status: 'in_progress',
+            alreadyInProgress: true,
+            message: 'Task already in progress',
+          });
+          outputResponse(response, options.json, (data) => {
+            console.log(chalk.yellow(`⚠ Task ${taskId} is already in progress`));
+          });
+          process.exit(ExitCode.SUCCESS);
+          return;
+        }
+
+        TaskWriter.updateTaskStatus(filePath, 'in_progress');
+        indexManager.updateTaskStatus(taskId, 'in_progress');
+
+        const response = successResponse({
+          taskId,
+          status: 'in_progress',
+          previousStatus: task.status,
+        });
+
+        outputResponse(response, options.json, (data) => {
+          console.log(chalk.yellow(`→ Task ${data.taskId} started`));
+        });
+
+        process.exit(ExitCode.SUCCESS);
+      } catch (error) {
+        handleError(Errors.fileSystemError('Failed to start task', error), options.json);
       }
+    });
 
-      TaskWriter.updateTaskStatus(filePath, 'in_progress');
-      indexManager.updateTaskStatus(taskId, 'in_progress');
+  // Batch operations for multiple tasks
+  tasks
+    .command('batch')
+    .description('Perform batch operations on multiple tasks')
+    .requiredOption('--operations <json>', 'JSON array of operations')
+    .option('--atomic', 'Rollback all on any failure (transactional)')
+    .option('--json', 'Output as JSON')
+    .action((options) => {
+      try {
+        let operations;
+        try {
+          operations = JSON.parse(options.operations);
+        } catch (error) {
+          handleError(Errors.invalidJson(error), options.json);
+        }
 
-      console.log(chalk.yellow(`→ Task ${taskId} started`));
+        if (!Array.isArray(operations)) {
+          handleError(Errors.invalidInput('Operations must be a JSON array'), options.json);
+        }
+
+        const results: any[] = [];
+        const backupData: any[] = [];
+
+        for (const op of operations) {
+          try {
+            const { action, taskId, ...params } = op;
+
+            const filePath = indexManager.getTaskFilePath(taskId);
+            if (!filePath) {
+              throw new Error(`Task not found: ${taskId}`);
+            }
+
+            // Backup for atomic mode
+            if (options.atomic) {
+              const task = TaskParser.parseTaskFile(filePath);
+              backupData.push({ taskId, filePath, originalTask: task });
+            }
+
+            // Perform operation
+            let result: any = { taskId, action, success: true };
+
+            switch (action) {
+              case 'start':
+                TaskWriter.updateTaskStatus(filePath, 'in_progress');
+                indexManager.updateTaskStatus(taskId, 'in_progress');
+                result.status = 'in_progress';
+                break;
+
+              case 'done':
+                TaskWriter.updateTaskStatus(filePath, 'completed');
+                indexManager.updateTaskStatus(taskId, 'completed');
+                if (params.duration) {
+                  TaskWriter.appendNotes(filePath, `Completed in ${params.duration}`);
+                }
+                result.status = 'completed';
+                break;
+
+              case 'fail':
+                if (!params.reason) {
+                  throw new Error('Reason required for fail action');
+                }
+                TaskWriter.updateTaskStatus(filePath, 'failed');
+                indexManager.updateTaskStatus(taskId, 'failed');
+                TaskWriter.appendNotes(filePath, `Failed: ${params.reason}`);
+                result.status = 'failed';
+                result.reason = params.reason;
+                break;
+
+              default:
+                throw new Error(`Unknown action: ${action}`);
+            }
+
+            results.push(result);
+          } catch (error) {
+            results.push({
+              taskId: op.taskId,
+              action: op.action,
+              success: false,
+              error: error instanceof Error ? error.message : String(error),
+            });
+
+            // Rollback in atomic mode
+            if (options.atomic) {
+              for (const backup of backupData) {
+                TaskWriter.updateTaskStatus(backup.filePath, backup.originalTask.status);
+                indexManager.updateTaskStatus(backup.taskId, backup.originalTask.status);
+              }
+              handleError(Errors.invalidState(`Batch operation failed, rolled back: ${error}`), options.json);
+            }
+          }
+        }
+
+        const allSuccessful = results.every(r => r.success);
+        const response = successResponse({
+          totalOperations: operations.length,
+          successful: results.filter(r => r.success).length,
+          failed: results.filter(r => !r.success).length,
+          allSuccessful,
+          results,
+        });
+
+        outputResponse(response, options.json, (data) => {
+          console.log(chalk.bold('Batch Operations Result:'));
+          console.log(`  Total: ${data.totalOperations}`);
+          console.log(`  ${chalk.green(`Successful: ${data.successful}`)}`);
+          if (data.failed > 0) {
+            console.log(`  ${chalk.red(`Failed: ${data.failed}`)}`);
+          }
+        });
+
+        process.exit(allSuccessful ? ExitCode.SUCCESS : ExitCode.GENERAL_ERROR);
+      } catch (error) {
+        handleError(Errors.fileSystemError('Failed to execute batch operations', error), options.json);
+      }
     });
 }
