@@ -2,79 +2,203 @@
 
 [English](README.md) | [中文](README_ZH.md)
 
-Autonomous development system for Claude Code that transforms requirements into production-ready code.
+Autonomous development workflow plugin for Claude Code that transforms natural language requirements into structured, testable code through a 5-phase process.
 
 [![npm version](https://img.shields.io/npm/v/ralph-dev.svg)](https://www.npmjs.com/package/ralph-dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
+## Overview
+
+Ralph-dev automates software development workflows by:
+- Breaking down requirements into atomic, testable tasks
+- Implementing each task with fresh agent context for TDD enforcement
+- Auto-detecting project language and framework (12+ languages supported)
+- Managing state and progress through a CLI-driven task system
+- Automatically healing errors through WebSearch-based investigation
+- Creating git commits and pull requests for code review
+
 ## Quick Start
 
 ```bash
-# Add marketplace
+# Install via marketplace
 /plugin marketplace add mylukin/ralph-dev
-
-# Install plugin
 /plugin install ralph-dev
 
-# Run your first task
+# Start your first task
 /ralph-dev "Build a REST API for user authentication"
 ```
 
-That's it! Ralph-dev will:
-1. Ask clarifying questions (answer A/B/C/D)
-2. Generate task breakdown (review & approve)
-3. Implement with TDD (watch progress)
-4. Create PR automatically (review & merge)
+Ralph-dev will guide you through:
+1. Clarifying questions with structured multiple-choice answers
+2. Task breakdown approval (review atomic tasks before implementation)
+3. Autonomous implementation with TDD workflow
+4. Automated pull request creation
 
 ## Key Features
 
-- **Interactive Clarification** - Structured questions eliminate ambiguity
-- **Autonomous Breakdown** - Decomposes into atomic tasks (<30min each)
-- **Self-Healing** - Auto-fixes errors using WebSearch (86% success rate)
-- **TDD Enforcement** - Tests first, no exceptions
-- **Two-Stage Review** - Spec compliance + code quality
-- **Universal Language** - Auto-detects ANY programming language
-- **Auto Delivery** - Creates commits and PRs
+### Interactive Clarification
+Structured Q&A eliminates requirement ambiguity through multiple-choice questions about tech stack, architecture, and deployment.
 
-## How It Works
+### Autonomous Task Breakdown
+Decomposes requirements into atomic tasks stored as markdown files with YAML frontmatter, enabling:
+- Dependency tracking between tasks
+- Granular progress monitoring
+- Human-readable task descriptions
+- Version control integration
+
+### Multi-Language Support
+Auto-detects and configures verification commands for:
+- **JavaScript/TypeScript** - Node.js, Next.js, React, Vue, Angular
+- **Python** - Django, Flask, FastAPI
+- **Go, Rust, Java, Ruby, PHP, C#, Swift, Kotlin, Scala, C++**
+
+### Self-Healing Implementation
+When tasks fail, automatically:
+- Investigates errors using WebSearch
+- Applies fixes based on research
+- Re-runs verification commands
+- Retries up to 3 times before escalating
+
+### Two-Stage Code Review
+Before creating PRs:
+1. **Spec Compliance** - Validates acceptance criteria are met
+2. **Code Quality** - Runs type-check, lint, and tests
+
+## Architecture
+
+### 5-Phase Workflow
 
 ```
-Phase 1: CLARIFY   → Phase 2: BREAKDOWN → Phase 3: IMPLEMENT
-Phase 4: HEAL      → Phase 5: DELIVER
+CLARIFY → BREAKDOWN → IMPLEMENT ⇄ HEAL → DELIVER
 ```
 
-**Example task:** "Add password reset functionality"
+**Phase 1: CLARIFY**
+- Skill: `skills/phase-1-clarify/`
+- Asks structured questions about requirements
+- Generates Product Requirements Document (PRD)
+- Output: `.ralph-dev/prd.md`
 
-**Phase 1** (1-2 min): Asks about reset method, token expiration, etc.
+**Phase 2: BREAKDOWN**
+- Skill: `skills/phase-2-breakdown/`
+- Parses PRD into atomic tasks (<30 min each)
+- Creates modular task files with dependency tracking
+- Output: `.ralph-dev/tasks/*.md` + `tasks/index.json`
 
-**Phase 2** (30 sec): Generates 5 atomic tasks with estimates
+**Phase 3: IMPLEMENT**
+- Skill: `skills/phase-3-implement/`
+- Spawns fresh agent context per task for TDD enforcement
+- Manages task lifecycle (pending → in_progress → completed/failed)
+- Automatically invokes Phase 4 on failure
 
-**Phase 3** (auto): Implements each task with TDD
+**Phase 4: HEAL**
+- Skill: `skills/phase-4-heal/`
+- Triggered when Phase 3 tasks fail
+- Uses WebSearch to research error solutions
+- Applies fixes and re-runs verification
+- Max 3 retry attempts per error
+
+**Phase 5: DELIVER**
+- Skill: `skills/phase-5-deliver/`
+- Runs language-specific quality gates
+- Two-stage code review process
+- Creates git commit and pull request
+
+### Directory Structure
+
 ```
-✅ auth.password-reset.api completed (1/5)
-   Duration: 23m 15s | Tests: 12/12 ✓ | Coverage: 92%
+ralph-dev/
+├── .claude-plugin/
+│   └── plugin.json           # Plugin metadata
+├── cli/                      # TypeScript CLI (state, tasks, language detection)
+│   ├── src/
+│   │   ├── commands/         # CLI subcommands
+│   │   │   ├── state.ts      # Manage .ralph-dev/state.json
+│   │   │   ├── tasks.ts      # Task CRUD operations
+│   │   │   ├── detect.ts     # Language detection
+│   │   │   └── detect-ai.ts  # AI-powered detection
+│   │   ├── core/
+│   │   │   ├── task-parser.ts      # Parse YAML frontmatter
+│   │   │   ├── task-writer.ts      # Write task files
+│   │   │   └── index-manager.ts    # Manage task index
+│   │   └── language/
+│   │       └── detector.ts   # Multi-language detection
+│   └── bin/
+│       └── ralph-dev.js      # CLI entry point
+├── skills/
+│   ├── dev-orchestrator/     # Main workflow orchestrator
+│   ├── phase-1-clarify/      # Requirements clarification
+│   ├── phase-2-breakdown/    # Task decomposition
+│   ├── phase-3-implement/    # Implementation loop
+│   ├── phase-4-heal/         # Error recovery
+│   └── phase-5-deliver/      # Quality gates + PR creation
+├── agents/
+│   └── language-detector.md  # AI-based language detection
+├── commands/
+│   └── ralph-dev.md          # Main /ralph-dev command
+└── shared/
+    └── bootstrap-cli.sh      # Auto-build CLI on first use
 ```
 
-**Phase 4** (auto, if needed): Auto-heals errors via WebSearch
+### Workspace Structure
 
-**Phase 5** (auto): Runs quality gates and creates PR
+When you run `/ralph-dev`, a workspace directory is created:
+
+```
+your-project/
+└── .ralph-dev/
+    ├── state.json            # Current phase, progress tracking
+    ├── prd.md                # Product Requirements Document
+    ├── tasks/
+    │   ├── index.json        # Task metadata and status
+    │   ├── auth/
+    │   │   ├── login.ui.md
+    │   │   ├── login.api.md
+    │   │   └── logout.md
+    │   └── setup/
+    │       └── scaffold.md
+    ├── progress.log          # Audit trail (gitignored)
+    └── debug.log             # Error logs (gitignored)
+```
+
+**Task File Format:**
+```markdown
+---
+id: auth.login.ui
+module: auth
+priority: 2
+status: pending
+estimatedMinutes: 25
+dependencies: [setup.scaffold]
+testRequirements:
+  unit:
+    required: true
+    pattern: "**/*.test.ts"
+---
+
+# Login UI Component
+
+## Acceptance Criteria
+1. Form displays email and password fields
+2. Submit button validates email format
+...
+```
 
 ## Installation
 
 ### Prerequisites
-- Claude Code (latest)
+- Claude Code (latest version)
 - Node.js >= 18.0.0
 - npm >= 9.0.0
 - Git repository
 
 ### Method 1: Via Marketplace (Recommended)
-```
+```bash
 /plugin marketplace add mylukin/ralph-dev
 /plugin install ralph-dev
 ```
 
 ### Method 2: Direct GitHub
-```
+```bash
 /plugin install mylukin/ralph-dev
 ```
 
@@ -85,89 +209,216 @@ cd ralph-dev
 ln -s $(pwd) ~/.claude/plugins/ralph-dev
 ```
 
-**Note:** CLI auto-builds on first use (~15-30 seconds).
+**Note:** The TypeScript CLI auto-builds on first use. Build time depends on your system performance.
 
-## Usage Examples
+## Usage
 
-**New Feature:**
-```
+### Starting a New Task
+```bash
 /ralph-dev "Add real-time notifications using WebSockets"
 ```
 
-**Bug Fix:**
-```
-/ralph-dev "Fix: Users can bypass email verification by direct API calls"
-```
-
-**Refactoring:**
-```
-/ralph-dev "Refactor authentication middleware to use decorator pattern"
+### Resuming Previous Session
+```bash
+/ralph-dev resume
 ```
 
-## Architecture
-
-```
-ralph-dev/
-├── cli/              # TypeScript CLI (state, tasks, detect)
-├── skills/           # 5 phase skills + orchestrator
-├── commands/         # /ralph-dev command
-├── agents/           # Language detector
-└── .claude-plugin/   # Plugin config
+### Check Progress
+```bash
+/ralph-dev status
 ```
 
-**Workspace structure:**
+### Cancel Session
+```bash
+/ralph-dev cancel
 ```
-your-project/
-└── .ralph-dev/
-    ├── state.json
-    ├── prd.md
-    └── tasks/
+
+## CLI Reference
+
+The `ralph-dev` CLI is used internally by skills to manage state and tasks:
+
+```bash
+# State management
+ralph-dev state get                    # Read current state
+ralph-dev state update --phase clarify # Update phase
+ralph-dev state clear                  # Reset state
+
+# Task management
+ralph-dev tasks list                   # List all tasks
+ralph-dev tasks next --json            # Get next pending task
+ralph-dev tasks start <id>             # Mark task in progress
+ralph-dev tasks done <id>              # Mark task completed
+ralph-dev tasks fail <id> --reason ""  # Mark task failed
+
+# Language detection
+ralph-dev detect                       # Detect language/framework
+ralph-dev detect-ai                    # AI-powered detection
+```
+
+## Language Detection
+
+Ralph-dev automatically detects your project's language and configures verification commands:
+
+| Language | Frameworks Detected | Test Frameworks | Build Tools |
+|----------|-------------------|----------------|-------------|
+| JavaScript/TypeScript | Next.js, React, Vue, Angular | Jest, Vitest | npm, Vite, Webpack |
+| Python | Django, Flask, FastAPI | pytest, unittest | pip |
+| Go | - | go test | go build |
+| Rust | - | cargo test | cargo |
+| Java | - | JUnit | Maven, Gradle |
+| Ruby | Rails | RSpec, Minitest | bundler |
+| PHP | Laravel, Symfony | PHPUnit | composer |
+| C# | .NET | xunit | dotnet |
+| Swift, Kotlin, Scala, C++ | Various | Various | Various |
+
+Detection analyzes:
+- Package manager files (package.json, requirements.txt, Cargo.toml, etc.)
+- Configuration files
+- Source file extensions
+- Project structure patterns
+
+## How It Works: Example Flow
+
+**User Input:**
+```bash
+/ralph-dev "Add password reset functionality"
+```
+
+**Phase 1: CLARIFY**
+- Asks questions about reset method (email/SMS), token expiration, security requirements
+- Generates PRD with user stories and technical requirements
+
+**Phase 2: BREAKDOWN**
+Creates tasks like:
+- `auth.password-reset.ui` - Frontend form component
+- `auth.password-reset.api` - Backend API endpoint
+- `auth.password-reset.email` - Email notification service
+- `auth.password-reset.tests` - Integration tests
+- `auth.password-reset.docs` - API documentation
+
+**Phase 3: IMPLEMENT**
+For each task:
+1. Spawns fresh agent context
+2. Implements with TDD (tests first)
+3. Runs verification commands
+4. Marks task complete or invokes Phase 4 on error
+
+**Phase 4: HEAL** (if needed)
+- Searches for error solutions
+- Applies fixes automatically
+- Retries verification
+
+**Phase 5: DELIVER**
+- Runs full quality gates (type-check, lint, test, build)
+- Reviews spec compliance and code quality
+- Creates git commit with semantic message
+- Generates pull request
+
+## Configuration
+
+### Git Configuration
+Add `.ralph-dev/` directory to your `.gitignore`:
+```
+.ralph-dev/state.json
+.ralph-dev/progress.log
+.ralph-dev/debug.log
+```
+
+Commit task definitions and PRD:
+```
+!.ralph-dev/prd.md
+!.ralph-dev/tasks/
 ```
 
 ## Troubleshooting
 
-**Marketplace not found:**
-```
-/plugin install mylukin/ralph-dev  # Direct install
+### Marketplace not found
+```bash
+/plugin install mylukin/ralph-dev  # Direct install bypasses marketplace
 ```
 
-**Plugin not loading:**
-```
+### Plugin not loading
+```bash
 /plugin marketplace add mylukin/ralph-dev
 /plugin install ralph-dev
-/clear
+/clear  # Clear session and restart
 ```
 
-**CLI build fails:**
+### CLI build fails
 ```bash
-node --version  # Check >= 18.0.0
-npm --version   # Check >= 9.0.0
-cd ~/.claude/plugins/ralph-dev/cli && npm install && npm run build
+# Verify Node.js version
+node --version  # Should be >= 18.0.0
+npm --version   # Should be >= 9.0.0
+
+# Manual build
+cd ~/.claude/plugins/ralph-dev/cli
+npm install
+npm run build
+```
+
+### Tasks not progressing
+```bash
+# Check current state
+ralph-dev state get
+
+# View task status
+ralph-dev tasks list
+
+# Reset if stuck
+ralph-dev state clear
 ```
 
 ## Contributing
 
-- **Bugs**: [GitHub Issues](https://github.com/mylukin/ralph-dev/issues)
-- **Features**: [GitHub Discussions](https://github.com/mylukin/ralph-dev/discussions)
-- **PRs**: Fork → feature branch → tests → semantic commits → PR
+We welcome contributions:
+
+- **Bug Reports**: [GitHub Issues](https://github.com/mylukin/ralph-dev/issues)
+- **Feature Requests**: [GitHub Discussions](https://github.com/mylukin/ralph-dev/discussions)
+- **Pull Requests**:
+  1. Fork the repository
+  2. Create feature branch
+  3. Add tests for new functionality
+  4. Use semantic commit messages
+  5. Submit PR with description
+
+## Development
+
+### Running Tests
+```bash
+cd cli
+npm test
+```
+
+### Building CLI
+```bash
+cd cli
+npm install
+npm run build
+```
+
+### Plugin Structure
+- Commands: User-facing entry points (`/ralph-dev`)
+- Skills: AI agent workflows (5 phases + orchestrator)
+- Agents: Autonomous specialized agents (language detector)
+- CLI: TypeScript binary for state/task management
 
 ## License
 
-MIT - see [LICENSE](LICENSE)
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Support
 
-- 📖 [Skill Documentation](/skills)
-- 🐛 [GitHub Issues](https://github.com/mylukin/ralph-dev/issues)
+- 📖 [Skill Documentation](skills/)
+- 🐛 [Report Issues](https://github.com/mylukin/ralph-dev/issues)
 - 💬 [Discussions](https://github.com/mylukin/ralph-dev/discussions)
-- 🌐 [Repository](https://github.com/mylukin/ralph-dev)
+- 🌐 [GitHub Repository](https://github.com/mylukin/ralph-dev)
+
+## Acknowledgments
+
+Built for the Claude Code plugin ecosystem. Requires Claude Code CLI to function.
 
 ---
 
-**Ready to start?**
-
-```
-/plugin marketplace add mylukin/ralph-dev
-/plugin install ralph-dev
-/ralph-dev "Your task here"
-```
+**Version:** 0.1.0
+**Status:** Early development
+**Author:** Lukin ([email protected])
