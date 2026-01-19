@@ -741,4 +741,56 @@ export function registerTaskCommands(program: Command, workspaceDir: string): vo
         handleError(Errors.fileSystemError('Failed to execute batch operations', error), options.json);
       }
     });
+
+  // Parse implementation result from agent output
+  tasks
+    .command('parse-result')
+    .description('Parse structured implementation result from agent output (supports tool calling v2 + YAML fallback)')
+    .option('--file <path>', 'Path to file containing agent output')
+    .option('--text <text>', 'Direct agent output text')
+    .option('--json', 'Output as JSON')
+    .action(async (options) => {
+      try {
+        // Import structured output parser
+        const { StructuredOutputParser } = await import('../core/structured-output');
+
+        // Get agent output from file or text
+        let agentOutput: string;
+        if (options.file) {
+          agentOutput = fs.readFileSync(options.file, 'utf-8');
+        } else if (options.text) {
+          agentOutput = options.text;
+        } else {
+          handleError(Errors.validationError('Must provide either --file or --text'), options.json);
+          return;
+        }
+
+        // Parse using multi-strategy parser
+        const result = StructuredOutputParser.parseImplementationResult(agentOutput);
+
+        const response = successResponse(result);
+        outputResponse(response, options.json, (data) => {
+          console.log(chalk.bold('Implementation Result:'));
+          console.log(`  Task: ${data.task_id}`);
+          console.log(`  Status: ${data.status === 'success' ? chalk.green(data.status) : chalk.red(data.status)}`);
+          console.log(`  Verification: ${data.verification_passed ? chalk.green('✓ Passed') : chalk.red('✗ Failed')}`);
+          if (data.tests_passing) {
+            console.log(`  Tests: ${data.tests_passing}`);
+          }
+          if (data.coverage !== undefined) {
+            console.log(`  Coverage: ${data.coverage}%`);
+          }
+          if (data.confidence_score !== undefined) {
+            console.log(`  Confidence: ${(data.confidence_score * 100).toFixed(0)}%`);
+          }
+          if (data.notes) {
+            console.log(`  Notes: ${data.notes}`);
+          }
+        });
+
+        process.exit(ExitCode.SUCCESS);
+      } catch (error: any) {
+        handleError(Errors.parsingError(`Failed to parse implementation result: ${error.message}`, error), options.json);
+      }
+    });
 }

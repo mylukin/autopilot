@@ -146,4 +146,24 @@ export const Errors = {
       recoverable: false,
     }
   ),
+
+  validationError: (message: string, details?: any): CLIError => createError(
+    'VALIDATION_ERROR',
+    message,
+    {
+      details,
+      recoverable: false,
+      suggestedAction: 'Check input parameters and try again',
+    }
+  ),
+
+  parsingError: (message: string, details?: any): CLIError => createError(
+    'PARSING_ERROR',
+    message,
+    {
+      details,
+      recoverable: false,
+      suggestedAction: 'Verify the input format is correct',
+    }
+  ),
 };

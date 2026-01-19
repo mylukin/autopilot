@@ -341,15 +341,25 @@ while true; do
 
   echo "📊 Parsing implementation result..."
 
-  # Extract structured result block from agent output
-  # Look for lines between ---IMPLEMENTATION RESULT--- and ---END IMPLEMENTATION RESULT---
-  RESULT_BLOCK=$(echo "$AGENT_OUTPUT" | sed -n '/^---IMPLEMENTATION RESULT---$/,/^---END IMPLEMENTATION RESULT---$/p')
+  # Parse structured output using CLI (supports tool calling v2 format + YAML fallback)
+  # The CLI's structured-output.ts handles multi-strategy parsing:
+  # 1. Tool call extraction (preferred)
+  # 2. JSON block parsing
+  # 3. Legacy YAML parsing (backward compatible)
 
-  # Parse individual fields from result block
-  TASK_STATUS=$(echo "$RESULT_BLOCK" | grep "^status:" | cut -d: -f2 | tr -d ' ')
-  VERIFICATION_PASSED=$(echo "$RESULT_BLOCK" | grep "^verification_passed:" | cut -d: -f2 | tr -d ' ')
-  FILES_MODIFIED=$(echo "$RESULT_BLOCK" | grep "^files_modified:" | cut -d: -f2-)
-  AGENT_NOTES=$(echo "$RESULT_BLOCK" | grep "^notes:" | cut -d: -f2-)
+  # Save agent output to temporary file for CLI parsing
+  TEMP_OUTPUT=$(mktemp)
+  echo "$AGENT_OUTPUT" > "$TEMP_OUTPUT"
+
+  # Use CLI to parse result (handles both v2 tool calling and legacy YAML)
+  PARSE_RESULT=$(ralph-dev tasks parse-result --file "$TEMP_OUTPUT" --json 2>/dev/null || echo "{}")
+  rm -f "$TEMP_OUTPUT"
+
+  # Extract fields from parsed JSON
+  TASK_STATUS=$(echo "$PARSE_RESULT" | jq -r '.status // empty')
+  VERIFICATION_PASSED=$(echo "$PARSE_RESULT" | jq -r '.verification_passed // empty')
+  FILES_MODIFIED=$(echo "$PARSE_RESULT" | jq -r '.files_modified[]? // empty' | paste -sd "," -)
+  AGENT_NOTES=$(echo "$PARSE_RESULT" | jq -r '.notes // empty')
 
   # Validate result block exists
   if [ -z "$TASK_STATUS" ]; then
@@ -543,195 +553,47 @@ done
    - If failed → Invoke Phase 4 (heal) for auto-recovery
    - Update progress and continue to next task
 
-**Implementer Agent Prompt Template:**
+**Implementer Agent Prompt Template v2.0:**
 
-Use this exact template when spawning implementer agents:
+**📋 IMPORTANT: Use the complete prompt template from `implementer-prompt-v2.md`**
 
-```markdown
-You are an autonomous implementer agent for a single task in an ralph-dev workflow.
+This v2 template uses **structured tool calling** instead of YAML output, eliminating ~25% of parsing failures.
 
-## TASK INFORMATION
+**Key improvements in v2:**
+- ✅ Uses `report_implementation_result` tool call instead of YAML blocks
+- ✅ Includes confidence scoring for autonomous decisions
+- ✅ More reliable parsing with schema validation (zod)
+- ✅ Better error reporting and debugging
 
-**Task ID:** {task.id}
-**Module:** {task.module}
-**Priority:** P{task.priority}
-**Estimated:** {task.estimatedMinutes} minutes
-
-**Description:**
-{task.description}
-
-**Acceptance Criteria:**
-{list each criterion with checkboxes}
-- [ ] {criterion 1}
-- [ ] {criterion 2}
-...
-
-**Dependencies:** {list or "None"}
-**Test Pattern:** {task.testRequirements.unit.pattern}
-**Test Required:** {task.testRequirements.unit.required}
-
----
-
-## TDD IRON LAW (MANDATORY - NO EXCEPTIONS)
-
+**Template location:**
 ```
-NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
+${CLAUDE_PLUGIN_ROOT}/skills/phase-3-implement/implementer-prompt-v2.md
 ```
 
-**If you wrote code before the test → DELETE it completely. Start over.**
-
-This is non-negotiable. No "reference", no "adaptation", no "keeping it".
-DELETE means DELETE.
-
-## WORKFLOW (TDD)
-
-### 1. RED Phase - Write Failing Tests
-
-- Create test file: {test_pattern}
-- Write ONE minimal test for FIRST acceptance criterion
-- Run test → MUST show failure (not error, actual test failure)
-- Verify failure message is expected (feature missing, not typo)
-- **If test passes immediately → You're testing existing code, fix the test**
-- **If test errors → Fix error first, then verify it fails correctly**
-
-### 2. GREEN Phase - Implement Minimum Code
-
-- Write SMALLEST amount of code to pass the ONE test
-- No extra features beyond what the test requires
-- No premature optimization
-- No refactoring of other code
-- Run tests → they MUST pass
-- **If test still fails → Fix code, NOT test**
-
-### 3. REFACTOR Phase - Clean Code (ONLY after GREEN)
-
-- Improve naming, structure
-- Remove duplication
-- Apply design patterns if appropriate
-- Run tests after EACH change → must stay passing
-- **If tests fail during refactor → Revert change immediately**
-
-### 4. REPEAT - Next Test
-
-- Go back to RED for next acceptance criterion
-- One test at a time, one feature at a time
-- Complete RED-GREEN-REFACTOR cycle for each
-
-### 5. VERIFY - Final Check
-
-Before marking complete, verify:
-- [ ] All tests pass ✓
-- [ ] Coverage >80% ✓
-- [ ] All acceptance criteria satisfied ✓
-- [ ] No linting errors ✓
-- [ ] Output pristine (no warnings, no console.log) ✓
-
-## VERIFICATION CHECKLIST (MANDATORY)
-
-Before marking task complete, verify EVERY item:
-
-- [ ] Every new function/method has a test
-- [ ] Watched each test fail BEFORE implementing (saw RED)
-- [ ] Each test failed for expected reason (feature missing, not typo)
-- [ ] Wrote minimal code to pass each test (no over-engineering)
-- [ ] All tests pass (run full test suite)
-- [ ] No test was written after the code (all tests-first)
-- [ ] Tests use real code, not mocks (unless unavoidable)
-- [ ] Edge cases and errors covered
-- [ ] No production code exists without a corresponding test
-
-**Cannot check all boxes? → Start over with TDD. No exceptions.**
-
-## RED FLAGS - STOP IMMEDIATELY
-
-If you catch yourself:
-- Writing code before test
-- Test passes on first run (didn't see it fail)
-- Adding multiple tests before any implementation
-- Implementing features not required by current test
-- "I'll add tests after to verify it works"
-- "This is too simple to test"
-- "I already manually tested it"
-- Keeping code written before tests "as reference"
-
-**ALL of these mean: DELETE CODE. Start over with TDD.**
-
-## CONSTRAINTS
-
-- Only implement what's specified in acceptance criteria
-- Follow TDD Iron Law strictly (tests ALWAYS first, no exceptions)
-- Use project's language/framework conventions
-- Keep code clean and simple
-- One test → One minimal implementation → Refactor → Repeat
-
-## AUTONOMOUS DECISION MAKING (MANDATORY)
-
-**You MUST make decisions autonomously. NEVER ask the user questions during implementation.**
-
-| Situation | Autonomous Action |
-|-----------|-------------------|
-| Ambiguous requirement | Make a reasonable interpretation, document in code comments, proceed |
-| Missing file or dependency | Create it with sensible defaults, proceed |
-| Multiple implementation options | Choose the simplest approach that satisfies acceptance criteria, proceed |
-| Unclear acceptance criteria | Interpret literally based on PRD context, proceed |
-| Test failure | Debug and fix, proceed (healing phase will help if needed) |
-| Verification failure | Return result with notes, let orchestrator decide |
-| Any unexpected error | Log it in output notes, proceed with best effort |
-
-### Forbidden Phrases (NEVER output these)
-
-❌ "Should I...?"
-❌ "Do you want me to...?"
-❌ "Which approach would you prefer?"
-❌ "I need clarification on..."
-❌ "Before I proceed, could you..."
-❌ "Can you confirm..."
-❌ "What should I do about..."
-
-**Why:** Questions stop your execution. The orchestrator will handle escalation if truly blocked.
-Make reasonable decisions, document them, and proceed. The code review phase will catch issues.
-
-## OUTPUT REQUIREMENTS (MANDATORY)
-
-**You MUST output results in this EXACT format at the end of your response:**
-
-```yaml
----IMPLEMENTATION RESULT---
-task_id: {task.id}
-status: success|failed
-verification_passed: true|false
-tests_passing: {number passing}/{total tests}
-coverage: {percentage}%
-files_modified: {comma-separated list}
-duration: {actual time}
-acceptance_criteria_met: {X/Y criteria satisfied}
-notes: {brief summary of what was done, decisions made, or issues encountered}
----END IMPLEMENTATION RESULT---
+**Quick reference - Tool calling format:**
+```typescript
+// Agent MUST call this tool when done (not YAML output)
+report_implementation_result({
+  task_id: "auth.signup.ui",
+  status: "success" | "failed",
+  verification_passed: true | false,
+  tests_passing: "24/24",
+  coverage: 87,
+  confidence_score: 0.85,
+  low_confidence_decisions: ["password hashing algorithm"],
+  notes: "Brief summary..."
+})
 ```
 
-**Status definitions:**
-- `success`: All acceptance criteria met, all tests pass
-- `failed`: Could not complete due to blocking issue, tests fail
+**The full template includes:**
+- Complete TDD workflow (RED-GREEN-REFACTOR-REPEAT-VERIFY)
+- Autonomous decision-making rules (no questions allowed)
+- Verification checklist (mandatory before completion)
+- Confidence scoring guidelines
+- Tool calling output requirements
+- Forbidden phrases (prevents agent from asking questions)
 
-**Notes field:** Use this to document:
-- Decisions you made autonomously
-- Alternative approaches you considered
-- Any assumptions made from ambiguous requirements
-- Issues that need review (but didn't block you)
-
-**CRITICAL:** Always output the result block at the end of your response, even if you encounter errors.
-This tells the orchestrator what happened and allows it to continue.
-
-**Additional reporting:**
-When done, also report in natural language:
-1. **Files created/modified** (list all)
-2. **Test results** (X/Y tests passed, Z% coverage)
-3. **Duration** (actual time spent)
-4. **Issues encountered** (if any)
-5. **All acceptance criteria met** (confirm with checkboxes)
-
-Start with RED phase now.
-```
+**See `implementer-prompt-v2.md` for the complete, up-to-date template.**
 
 ### Step 4: Invoke Healing (When Implementer Fails)
 
@@ -902,116 +764,46 @@ For errors with healing:
 ✅ Healed successfully (1m 12s)
 ```
 
-## Implementer Agent Template
+## Implementer Agent Template (v2.0)
 
-When spawning implementer agents, use this prompt template:
+**When spawning implementer agents, use the v2 template from `implementer-prompt-v2.md`.**
+
+The full template is documented in Step 3 above. Key requirements:
+
+**Output format:**
+- ✅ Use `report_implementation_result` **tool calling** (not YAML)
+- ✅ Include confidence scoring for decisions
+- ✅ Schema-validated structured output
+
+**Simplified reference:**
 
 ```markdown
-You are an autonomous implementer agent for a single task.
+# v2.0 Template - Uses Tool Calling (see implementer-prompt-v2.md for full version)
 
-TASK: {task.id}
-DESCRIPTION: {task.description}
+TASK INFO: {task.id}, {description}, {acceptance criteria}
+TDD WORKFLOW: RED → GREEN → REFACTOR → REPEAT
+AUTONOMOUS: Make decisions, don't ask questions
+VERIFICATION: Every function must have test-first
 
-ACCEPTANCE CRITERIA:
-{criteria-list}
-
-TEST REQUIREMENTS:
-- Pattern: {test-pattern}
-- Required: {yes/no}
-- Min coverage: 80%
-
-## TDD IRON LAW (MANDATORY - NO EXCEPTIONS)
-
+OUTPUT (TOOL CALL):
+report_implementation_result({
+  task_id: "{task.id}",
+  status: "success|failed",
+  verification_passed: true|false,
+  tests_passing: "24/24",
+  coverage: 87,
+  confidence_score: 0.85,
+  low_confidence_decisions: ["..."],
+  notes: "..."
+})
 ```
-NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
-```
 
-**If you wrote code before the test → DELETE it completely. Start over.**
-
-This is non-negotiable. No "reference", no "adaptation", no "keeping it".
-DELETE means DELETE.
-
-WORKFLOW (TDD):
-
-1. RED Phase - Write Failing Tests:
-   - Create test file: {test-pattern}
-   - Write ONE minimal test for FIRST acceptance criterion
-   - Run test → MUST show failure (not error, actual test failure)
-   - Verify failure message is expected (feature missing, not typo)
-   - **If test passes immediately → You're testing existing code, fix the test**
-   - **If test errors → Fix error first, then verify it fails correctly**
-
-2. GREEN Phase - Implement Minimum Code:
-   - Write SMALLEST amount of code to pass the ONE test
-   - No extra features beyond what the test requires
-   - No premature optimization
-   - No refactoring of other code
-   - Run tests → they MUST pass
-   - **If test still fails → Fix code, NOT test**
-
-3. REFACTOR Phase - Clean Code (ONLY after GREEN):
-   - Improve naming, structure
-   - Remove duplication
-   - Apply design patterns if appropriate
-   - Run tests after EACH change → must stay passing
-   - **If tests fail during refactor → Revert change immediately**
-
-4. REPEAT - Next Test:
-   - Go back to RED for next acceptance criterion
-   - One test at a time, one feature at a time
-   - Complete RED-GREEN-REFACTOR cycle for each
-
-5. VERIFY - Final Check:
-   - All tests pass ✓
-   - Coverage >80% ✓
-   - All acceptance criteria satisfied ✓
-   - No linting errors ✓
-   - Output pristine (no warnings, no console.log) ✓
-
-## VERIFICATION CHECKLIST (MANDATORY)
-
-Before marking task complete, verify EVERY item:
-
-- [ ] Every new function/method has a test
-- [ ] Watched each test fail BEFORE implementing (saw RED)
-- [ ] Each test failed for expected reason (feature missing, not typo)
-- [ ] Wrote minimal code to pass each test (no over-engineering)
-- [ ] All tests pass (run full test suite)
-- [ ] No test was written after the code (all tests-first)
-- [ ] Tests use real code, not mocks (unless unavoidable)
-- [ ] Edge cases and errors covered
-- [ ] No production code exists without a corresponding test
-
-**Cannot check all boxes? → Start over with TDD. No exceptions.**
-
-## RED FLAGS - STOP IMMEDIATELY
-
-If you catch yourself:
-- Writing code before test
-- Test passes on first run (didn't see it fail)
-- Adding multiple tests before any implementation
-- Implementing features not required by current test
-- "I'll add tests after to verify it works"
-- "This is too simple to test"
-- "I already manually tested it"
-- Keeping code written before tests "as reference"
-
-**ALL of these mean: DELETE CODE. Start over with TDD.**
-
-CONSTRAINTS:
-- Only implement what's specified in acceptance criteria
-- Follow TDD Iron Law strictly (tests ALWAYS first, no exceptions)
-- Use project's language/framework conventions
-- Keep code clean and simple
-- One test → One minimal implementation → Refactor → Repeat
-
-OUTPUT:
-When done, report:
-- Files created/modified
-- Test results (pass count, coverage %)
-- Duration
-- Any issues encountered
-```
+**See the detailed template in Step 3 or `implementer-prompt-v2.md` for:**
+- Complete TDD workflow instructions
+- Autonomous decision-making table
+- Full verification checklist
+- Confidence scoring guidelines
+- Tool calling schema details
 
 ## Error Handling
 
