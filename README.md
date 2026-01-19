@@ -448,6 +448,6 @@ Built for the Claude Code plugin ecosystem. Requires Claude Code CLI to function
 
 ---
 
-**Version:** 0.1.0
+**Version:** 0.2.0
 **Status:** Early development
 **Author:** Lukin ([email protected])

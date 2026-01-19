@@ -419,6 +419,6 @@ MIT 许可证 - 详见 [LICENSE](LICENSE) 文件。
 
 ---
 
-**版本：** 0.1.0
+**版本：** 0.2.0
 **状态：** 早期开发
 **作者：** Lukin ([email protected])
