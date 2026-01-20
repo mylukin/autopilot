@@ -11,13 +11,13 @@ export function registerDetectCommand(program: Command, workspaceDir: string): v
     .description('Detect project language and configuration')
     .option('--json', 'Output as JSON')
     .option('--save', 'Save to index metadata')
-    .action((options) => {
+    .action(async (options) => {
       try {
         const detectionService = createDetectionService(workspaceDir);
 
         // Use detectAndSave if --save flag is present, otherwise just detect
         const result = options.save
-          ? detectionService.detectAndSave()
+          ? await detectionService.detectAndSave()
           : { languageConfig: detectionService.detect(), saved: false };
 
         const response = successResponse(result);
