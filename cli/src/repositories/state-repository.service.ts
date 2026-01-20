@@ -60,7 +60,8 @@ export class FileSystemStateRepository implements IStateRepository {
       currentState.transitionTo(updates.phase);
     }
 
-    if (updates.currentTask !== undefined) {
+    // Use 'in' operator to allow setting currentTask to undefined
+    if ('currentTask' in updates) {
       currentState.setCurrentTask(updates.currentTask);
     }
 
