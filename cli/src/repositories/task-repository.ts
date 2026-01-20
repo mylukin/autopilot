@@ -1,4 +1,4 @@
-import { Task } from '../core/task-parser';
+import { Task } from '../domain/task-entity';
 
 /**
  * Task filter interface for querying tasks

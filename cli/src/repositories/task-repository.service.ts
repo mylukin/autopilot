@@ -1,5 +1,5 @@
 import { ITaskRepository, TaskFilter } from './task-repository';
-import { Task } from '../core/task-parser';
+import { Task, TaskConfig } from '../domain/task-entity';
 import { IFileSystem } from '../infrastructure/file-system';
 import * as path from 'path';
 import * as yaml from 'yaml';
@@ -296,14 +296,23 @@ export class FileSystemTaskRepository implements ITaskRepository {
     }
 
     const notesMatch = body.match(/##\s+Notes\s*\n([\s\S]+?)(?=\n##|$)/m);
-    const notes = notesMatch ? notesMatch[1].trim() : undefined;
+    const notes = notesMatch ? notesMatch[1].trim() : '';
 
-    return {
-      ...frontmatter,
+    // Create domain entity from parsed data
+    const taskConfig: TaskConfig = {
+      id: frontmatter.id,
+      module: frontmatter.module,
+      priority: frontmatter.priority,
+      status: frontmatter.status,
+      estimatedMinutes: frontmatter.estimatedMinutes,
       description,
       acceptanceCriteria,
+      dependencies: frontmatter.dependencies || [],
+      testRequirements: frontmatter.testRequirements,
       notes,
     };
+
+    return new Task(taskConfig);
   }
 
   /**

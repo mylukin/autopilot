@@ -28,24 +28,26 @@ describe('FileSystemStateRepository', () => {
 
     it('should return state when file exists', async () => {
       // Arrange
-      const state: State = {
+      const stateData = {
         phase: 'implement',
         currentTask: 'test.task',
         startedAt: '2026-01-20T00:00:00.000Z',
         updatedAt: '2026-01-20T00:10:00.000Z',
       };
-      mockFileSystem.setFile(stateFile, JSON.stringify(state, null, 2));
+      mockFileSystem.setFile(stateFile, JSON.stringify(stateData, null, 2));
 
       // Act
       const result = await repository.get();
 
       // Assert
-      expect(result).toEqual(state);
+      expect(result).toBeDefined();
+      expect(result?.phase).toBe('implement');
+      expect(result?.currentTask).toBe('test.task');
     });
 
     it('should parse state with PRD', async () => {
       // Arrange
-      const state: State = {
+      const stateData = {
         phase: 'breakdown',
         prd: {
           title: 'Test PRD',
@@ -54,13 +56,12 @@ describe('FileSystemStateRepository', () => {
         startedAt: '2026-01-20T00:00:00.000Z',
         updatedAt: '2026-01-20T00:10:00.000Z',
       };
-      mockFileSystem.setFile(stateFile, JSON.stringify(state, null, 2));
+      mockFileSystem.setFile(stateFile, JSON.stringify(stateData, null, 2));
 
       // Act
       const result = await repository.get();
 
       // Assert
-      expect(result).toEqual(state);
       expect(result?.prd).toEqual({
         title: 'Test PRD',
         requirements: ['req1', 'req2'],
@@ -69,7 +70,7 @@ describe('FileSystemStateRepository', () => {
 
     it('should parse state with errors', async () => {
       // Arrange
-      const state: State = {
+      const stateData = {
         phase: 'heal',
         errors: [
           { message: 'Error 1', code: 'ERR1' },
@@ -78,13 +79,12 @@ describe('FileSystemStateRepository', () => {
         startedAt: '2026-01-20T00:00:00.000Z',
         updatedAt: '2026-01-20T00:10:00.000Z',
       };
-      mockFileSystem.setFile(stateFile, JSON.stringify(state, null, 2));
+      mockFileSystem.setFile(stateFile, JSON.stringify(stateData, null, 2));
 
       // Act
       const result = await repository.get();
 
       // Assert
-      expect(result).toEqual(state);
       expect(result?.errors).toHaveLength(2);
     });
   });

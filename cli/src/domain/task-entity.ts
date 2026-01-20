@@ -60,7 +60,7 @@ export class Task {
   public readonly estimatedMinutes?: number;
   public readonly dependencies: string[];
   public readonly testRequirements?: TaskTestRequirements;
-  public readonly notes?: string;
+  private _notes?: string;
 
   constructor(config: TaskConfig) {
     this.id = config.id;
@@ -72,7 +72,7 @@ export class Task {
     this.estimatedMinutes = config.estimatedMinutes;
     this.dependencies = config.dependencies || [];
     this.testRequirements = config.testRequirements;
-    this.notes = config.notes;
+    this._notes = config.notes;
 
     // Parse timestamps
     this._startedAt = config.startedAt ? new Date(config.startedAt) : undefined;
@@ -95,6 +95,10 @@ export class Task {
 
   get failedAt(): Date | undefined {
     return this._failedAt;
+  }
+
+  get notes(): string | undefined {
+    return this._notes;
   }
 
   /**
@@ -148,6 +152,18 @@ export class Task {
 
     this._status = 'failed';
     this._failedAt = new Date();
+  }
+
+  /**
+   * Append text to notes
+   * @param note Text to append
+   */
+  appendNote(note: string): void {
+    if (this._notes) {
+      this._notes += '\n' + note;
+    } else {
+      this._notes = note;
+    }
   }
 
   /**
@@ -241,7 +257,7 @@ export class Task {
       estimatedMinutes: this.estimatedMinutes,
       dependencies: this.dependencies,
       testRequirements: this.testRequirements,
-      notes: this.notes,
+      notes: this._notes,
       startedAt: this._startedAt?.toISOString(),
       completedAt: this._completedAt?.toISOString(),
       failedAt: this._failedAt?.toISOString(),

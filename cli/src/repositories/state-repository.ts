@@ -5,16 +5,7 @@
  * Used by skills to manage workflow phase state.
  */
 
-export type Phase = 'clarify' | 'breakdown' | 'implement' | 'heal' | 'deliver' | 'complete';
-
-export interface State {
-  phase: Phase;
-  currentTask?: string;
-  prd?: any;
-  errors?: any[];
-  startedAt: string;
-  updatedAt: string;
-}
+import { State, Phase, StateConfig } from '../domain/state-entity';
 
 export interface StateUpdate {
   phase?: Phase;
@@ -22,6 +13,8 @@ export interface StateUpdate {
   prd?: any;
   addError?: any;
 }
+
+export { State, Phase, StateConfig };
 
 /**
  * State repository interface
@@ -37,9 +30,9 @@ export interface IStateRepository {
 
   /**
    * Set complete state (for initialization)
-   * @param state State to set
+   * @param state State config to set (plain object)
    */
-  set(state: Omit<State, 'updatedAt'>): Promise<void>;
+  set(state: Omit<StateConfig, 'updatedAt'>): Promise<void>;
 
   /**
    * Update specific state fields
