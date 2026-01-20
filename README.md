@@ -20,11 +20,16 @@ Ralph-dev automates software development workflows by:
 ## Quick Start
 
 ```bash
-# Install via marketplace
+# Step 1: Install CLI globally
+npm install -g ralph-dev
+
+# Step 2: Add plugin marketplace
 /plugin marketplace add mylukin/ralph-dev
+
+# Step 3: Install plugin
 /plugin install ralph-dev
 
-# Start your first task
+# Step 4: Start your first task
 /ralph-dev "Build a REST API for user authentication"
 ```
 
@@ -196,22 +201,21 @@ testRequirements:
 - npm >= 9.0.0
 - Git repository
 
-### Method 1: Via Marketplace (Recommended)
+### Installation Steps
+
+**Step 1: Install CLI globally**
+```bash
+npm install -g ralph-dev
+```
+
+**Step 2: Add plugin marketplace**
 ```bash
 /plugin marketplace add mylukin/ralph-dev
+```
+
+**Step 3: Install plugin**
+```bash
 /plugin install ralph-dev
-```
-
-### Method 2: Direct GitHub
-```bash
-/plugin install mylukin/ralph-dev
-```
-
-### Method 3: Local Development
-```bash
-git clone https://github.com/mylukin/ralph-dev.git
-cd ralph-dev
-ln -s $(pwd) ~/.claude/plugins/ralph-dev
 ```
 
 **Note:** The TypeScript CLI auto-builds on first use. Build time depends on your system performance.
@@ -369,16 +373,29 @@ Commit task definitions and PRD:
 
 ## Troubleshooting
 
-### Marketplace not found
-```bash
-/plugin install mylukin/ralph-dev  # Direct install bypasses marketplace
-```
-
 ### Plugin not loading
 ```bash
+# Reinstall the plugin
+/plugin uninstall ralph-dev
 /plugin marketplace add mylukin/ralph-dev
 /plugin install ralph-dev
 /clear  # Clear session and restart
+```
+
+### CLI not found
+```bash
+# Verify global installation
+npm list -g ralph-dev
+
+# Reinstall if needed
+npm install -g ralph-dev
+```
+
+### Marketplace update
+```bash
+# Update marketplace to get latest version
+/plugin marketplace update mylukin/ralph-dev
+/plugin update ralph-dev
 ```
 
 ### CLI build fails

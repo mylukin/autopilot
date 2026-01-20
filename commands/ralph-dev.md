@@ -1,4 +1,5 @@
 ---
+name: ralph-dev
 argument-hint: "<requirement>" [--mode=resume|status|cancel]
 description: Start autonomous end-to-end development from requirement to production-ready code
 context: fork

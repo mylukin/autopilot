@@ -20,11 +20,16 @@ Ralph-dev 通过以下方式自动化软件开发工作流：
 ## 快速开始
 
 ```bash
-# 通过 marketplace 安装
+# 步骤 1：全局安装 CLI
+npm install -g ralph-dev
+
+# 步骤 2：添加插件市场
 /plugin marketplace add mylukin/ralph-dev
+
+# 步骤 3：安装插件
 /plugin install ralph-dev
 
-# 启动第一个任务
+# 步骤 4：启动第一个任务
 /ralph-dev "构建用户认证 REST API"
 ```
 
@@ -196,22 +201,21 @@ testRequirements:
 - npm >= 9.0.0
 - Git 仓库
 
-### 方式 1：通过 Marketplace（推荐）
+### 安装步骤
+
+**步骤 1：全局安装 CLI**
+```bash
+npm install -g ralph-dev
+```
+
+**步骤 2：添加插件市场**
 ```bash
 /plugin marketplace add mylukin/ralph-dev
+```
+
+**步骤 3：安装插件**
+```bash
 /plugin install ralph-dev
-```
-
-### 方式 2：直接从 GitHub
-```bash
-/plugin install mylukin/ralph-dev
-```
-
-### 方式 3：本地开发
-```bash
-git clone https://github.com/mylukin/ralph-dev.git
-cd ralph-dev
-ln -s $(pwd) ~/.claude/plugins/ralph-dev
 ```
 
 **注意：** TypeScript CLI 在首次使用时自动构建。构建时间取决于系统性能。
@@ -369,16 +373,29 @@ export RALPH_DEV_SKIP_BASELINE=false
 
 ## 故障排除
 
-### 找不到 Marketplace
-```bash
-/plugin install mylukin/ralph-dev  # 直接安装绕过 marketplace
-```
-
 ### 插件未加载
 ```bash
+# 重新安装插件
+/plugin uninstall ralph-dev
 /plugin marketplace add mylukin/ralph-dev
 /plugin install ralph-dev
 /clear  # 清除会话并重启
+```
+
+### 找不到 CLI
+```bash
+# 验证全局安装
+npm list -g ralph-dev
+
+# 如需要则重新安装
+npm install -g ralph-dev
+```
+
+### 更新市场
+```bash
+# 更新市场以获取最新版本
+/plugin marketplace update mylukin/ralph-dev
+/plugin update ralph-dev
 ```
 
 ### CLI 构建失败
