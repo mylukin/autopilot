@@ -7,7 +7,7 @@
 
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import * as yaml from 'js-yaml';
+import * as yaml from 'yaml';
 import chalk from 'chalk';
 
 // ============================================================================
@@ -95,7 +95,7 @@ export class CIConfigLoader {
     if (fs.existsSync(configPath)) {
       try {
         const fileContent = fs.readFileSync(configPath, 'utf-8');
-        const fileConfig = yaml.load(fileContent) as any;
+        const fileConfig = yaml.parse(fileContent) as any;
 
         config = {
           ...config,

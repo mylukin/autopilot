@@ -341,8 +341,7 @@ npm run build
 - `chalk` - 终端颜色
 - `yaml` - YAML 解析
 - `fs-extra` - 增强的文件系统操作
-- `cli-progress` - 进度条
-- `ora` - 加载动画
+- `zod` - Schema 验证
 
 **开发：**
 - `typescript` - 类型安全

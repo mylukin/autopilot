@@ -341,8 +341,7 @@ npm run build
 - `chalk` - Terminal colors
 - `yaml` - YAML parsing
 - `fs-extra` - Enhanced file system operations
-- `cli-progress` - Progress bars
-- `ora` - Spinners
+- `zod` - Schema validation
 
 **Development:**
 - `typescript` - Type safety
