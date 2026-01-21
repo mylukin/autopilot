@@ -19,6 +19,23 @@ Transform user requirements into a comprehensive PRD that preserves all context 
 
 ## Workflow
 
+### Step 0: Initialize CLI (Automatic)
+
+**IMPORTANT:** This skill requires the Ralph-dev CLI. It will build automatically on first use.
+
+```bash
+# Bootstrap CLI - runs automatically, builds if needed
+source ${CLAUDE_PLUGIN_ROOT}/shared/bootstrap-cli.sh
+
+# Verify CLI is ready
+ralph-dev --version
+
+# Context-compression resilience: Verify current phase
+CURRENT_PHASE=$(ralph-dev state get --json 2>/dev/null | jq -r '.phase // "none"')
+echo "Current phase: $CURRENT_PHASE"
+# Expected: clarify (or none for new session)
+```
+
 ### Step 1: Extract Context (CRITICAL - Do This First)
 
 Before asking ANY questions, scan the conversation history for:

@@ -7,9 +7,9 @@ user-invocable: true
 
 # Ralph-dev Orchestrator
 
-## Overview
+## Goal
 
-You are the ralph-dev system orchestrator. Your mission: Transform a user requirement into delivered, tested, production-ready code with ZERO manual intervention after initial clarification.
+Transform a user requirement into delivered, tested, production-ready code with ZERO manual intervention after initial clarification.
 
 ## Workflow Phases
 
@@ -17,447 +17,148 @@ You are the ralph-dev system orchestrator. Your mission: Transform a user requir
 1. CLARIFY    → Questions & PRD (interactive)
 2. BREAKDOWN  → Atomic tasks (autonomous)
 3. IMPLEMENT  → Code + tests (autonomous)
-4. HEAL       → Auto-fix errors (on-demand)
+4. HEAL       → Auto-fix errors (on-demand, invoked by Phase 3)
 5. DELIVER    → Verify + commit + PR (autonomous)
 ```
 
 ## State Management
 
 All state persists in `.ralph-dev/`:
-- `state.json` - Current phase, progress, errors (managed by CLI)
+- `state.json` - Current phase, progress (managed by CLI)
 - `prd.md` - Product requirements document
-- `tasks/` - Modular task storage (agent-ralph-dev style)
-- `tasks/index.json` - Task index (managed by CLI)
-- `progress.log` - Audit trail
-- `debug.log` - Error recovery log
+- `tasks/` - Task files with index.json
+
+---
 
 ## Execution
 
 ### Initialize
 
 ```bash
-# Change to project root
-cd $PROJECT_ROOT
-
 # Parse mode from arguments
-# $1 = user requirement or mode flag
-MODE="new"
-if [[ "$1" == "--mode=resume" ]] || [[ "$1" == "resume" ]]; then
-  MODE="resume"
-elif [[ "$1" == "--mode=status" ]] || [[ "$1" == "status" ]]; then
-  MODE="status"
-elif [[ "$1" == "--mode=cancel" ]] || [[ "$1" == "cancel" ]]; then
-  MODE="cancel"
-fi
+MODE="new"  # or "resume", "status", "cancel"
 
-# Detect project language and save configuration
-ralph-dev detect --save
-
-# Check existing session state
-CURRENT_STATE=$(ralph-dev state get --json 2>/dev/null)
-HAS_EXISTING_PHASE=$(echo "$CURRENT_STATE" | jq -e '.phase' > /dev/null 2>&1 && echo "true" || echo "false")
-
-if [[ "$MODE" == "resume" ]]; then
-  # Resume mode - continue existing session
-  if [[ "$HAS_EXISTING_PHASE" == "true" ]]; then
-    CURRENT_PHASE=$(echo "$CURRENT_STATE" | jq -r '.phase')
-    echo "🔄 Resuming from phase: $CURRENT_PHASE"
-  else
-    echo "❌ ERROR: No existing session to resume"
-    exit 1
-  fi
-elif [[ "$MODE" == "new" ]]; then
-  # New session mode - archive existing if present, then start fresh
-  if [[ "$HAS_EXISTING_PHASE" == "true" ]]; then
-    CURRENT_PHASE=$(echo "$CURRENT_STATE" | jq -r '.phase')
-    echo "📦 Found existing session in phase: $CURRENT_PHASE"
-    echo "   Archiving with --force..."
-    # Use --force because we intentionally want to archive incomplete sessions
-    # when starting a new session (user explicitly requested new session)
-    ARCHIVE_RESULT=$(ralph-dev state archive --force --json 2>&1)
-    if echo "$ARCHIVE_RESULT" | jq -e '.success == true' > /dev/null 2>&1; then
-      ARCHIVE_PATH=$(echo "$ARCHIVE_RESULT" | jq -r '.data.archivePath // "unknown"')
-      echo "✅ Previous session archived to: $ARCHIVE_PATH"
-    fi
-  fi
-  # Initialize new session
-  ralph-dev state set --phase clarify
-  CURRENT_PHASE="clarify"
-  echo "🚀 Starting new Ralph-dev session"
-fi
+case "$MODE" in
+  resume)
+    # Load existing state
+    PHASE=$(ralph-dev state get --json | jq -r '.phase')
+    ;;
+  new)
+    # Archive existing session if present
+    ralph-dev state archive --force --json 2>/dev/null
+    ralph-dev state set --phase clarify
+    ralph-dev detect --save  # Detect language config
+    PHASE="clarify"
+    ;;
+esac
 ```
 
-### Main Execution Loop (Context-Compression Resilient)
-
-**CRITICAL:** This loop is state-driven and can recover from context compression at any point.
+### Main Loop (Context-Compression Resilient)
 
 ```bash
-# Store user requirement for clarify phase
-USER_REQUIREMENT="$1"  # From skill invocation
-
-# Loop start time for safety timeout
-ORCHESTRATOR_START_TIME=$(date +%s)
-MAX_ORCHESTRATOR_DURATION=$((12 * 3600))  # 12 hours max
-
 while true; do
-  # ═══════════════════════════════════════════
-  # SAFETY: Timeout check (context-compression safe)
-  # ═══════════════════════════════════════════
-  CURRENT_TIME=$(date +%s)
-  ELAPSED_TIME=$((CURRENT_TIME - ORCHESTRATOR_START_TIME))
+  # Always re-query phase from CLI (context-compression safe)
+  PHASE=$(ralph-dev state get --json | jq -r '.phase')
 
-  if [ $ELAPSED_TIME -gt $MAX_ORCHESTRATOR_DURATION ]; then
-    echo "❌ CRITICAL ERROR: Orchestrator exceeded $MAX_ORCHESTRATOR_DURATION seconds!"
-    echo "   Elapsed: $(($ELAPSED_TIME / 3600)) hours"
-    echo "   This likely indicates a stuck phase. Check logs."
-    exit 1
-  fi
-
-  # ═══════════════════════════════════════════
-  # RE-QUERY current phase from CLI (context-compression safe)
-  # ═══════════════════════════════════════════
-  CURRENT_STATE=$(ralph-dev state get --json 2>/dev/null)
-
-  if ! echo "$CURRENT_STATE" | jq -e '.phase' > /dev/null 2>&1; then
-    echo "❌ ERROR: Cannot read state from CLI"
-    echo "   Run: ralph-dev state get --json"
-    exit 1
-  fi
-
-  CURRENT_PHASE=$(echo "$CURRENT_STATE" | jq -r '.phase')
-
-  echo ""
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "📍 Current Phase: $CURRENT_PHASE"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo ""
-
-  # ═══════════════════════════════════════════
-  # PHASE DISPATCH: Execute current phase
-  # ═══════════════════════════════════════════
-  case "$CURRENT_PHASE" in
-    clarify)
-      # Phase 1 logic (see below)
-      execute_phase_1_clarify
-      # Phase 1 updates state to "breakdown" on success
-      continue
-      ;;
-
-    breakdown)
-      # Phase 2 logic (see below)
-      execute_phase_2_breakdown
-      # Phase 2 updates state to "implement" on success
-      continue
-      ;;
-
-    implement)
-      # Phase 3 logic (see below)
-      execute_phase_3_implement
-      # Phase 3 updates state to "deliver" on success
-      continue
-      ;;
-
-    deliver)
-      # Phase 5 logic (see below)
-      execute_phase_5_deliver
-      # Phase 5 updates state to "complete" on success
-      continue
-      ;;
-
-    complete)
-      echo "✅ All phases complete!"
-      echo ""
-      break
-      ;;
-
-    *)
-      echo "❌ ERROR: Unknown phase: $CURRENT_PHASE"
-      echo "   Valid phases: clarify, breakdown, implement, deliver, complete"
-      exit 1
-      ;;
+  case "$PHASE" in
+    clarify)   invoke_skill "phase-1-clarify"   ;;
+    breakdown) invoke_skill "phase-2-breakdown" ;;
+    implement) invoke_skill "phase-3-implement" ;;
+    deliver)   invoke_skill "phase-5-deliver"   ;;
+    complete)  echo "✅ All phases complete!"; break ;;
+    *)         echo "❌ Unknown phase: $PHASE"; exit 1 ;;
   esac
 done
 ```
 
-### Phase 1: CLARIFY (Interactive + Context-Aware)
+### Phase Invocation
 
-**CRITICAL**: Phase 1 extracts context from conversation history before asking questions. This preserves UI designs, data models, and decisions discussed before `/ralph-dev` was invoked.
+Use Task tool to invoke each phase skill:
 
-```bash
-execute_phase_1_clarify() {
-  # Invoke phase-1-clarify skill via Task tool
-  # Key behaviors:
-  # 1. Extract existing context from conversation (UI, data, API, flows, decisions)
-  # 2. Only ask questions for GAPS
-  # 3. Generate PRD preserving all discussed details
-  # 4. Save to .ralph-dev/prd.md
-
-  # Verify PRD was created
-  if [ ! -f ".ralph-dev/prd.md" ]; then
-    echo "❌ ERROR: Phase 1 did not create PRD file"
-    exit 1
-  fi
-
-  ralph-dev state update --phase breakdown
-}
+```
+Tool: Task
+Parameters:
+  subagent_type: "{phase-skill-name}"
+  description: "Execute {phase} phase"
+  prompt: "{phase-specific context}"
+  run_in_background: false
 ```
 
-### Phase 2: BREAKDOWN (Autonomous)
+---
 
-**Function: execute_phase_2_breakdown**
+## Phase Summary
 
-```bash
-execute_phase_2_breakdown() {
-  echo "Phase 2/5: Breaking down into tasks..."
-  echo ""
+| Phase | Skill | Interactive | Key Output |
+|-------|-------|-------------|------------|
+| 1. Clarify | `phase-1-clarify` | Yes | `.ralph-dev/prd.md` |
+| 2. Breakdown | `phase-2-breakdown` | Yes (approval) | `.ralph-dev/tasks/` |
+| 3. Implement | `phase-3-implement` | No | Code + tests |
+| 4. Heal | `phase-4-heal` | No | (invoked by Phase 3) |
+| 5. Deliver | `phase-5-deliver` | Optional | Commit + PR |
 
-  # Read PRD (context-compression safe - from file)
-  if [ ! -f ".ralph-dev/prd.md" ]; then
-    echo "❌ ERROR: PRD file not found (.ralph-dev/prd.md)"
-    exit 1
-  fi
+---
 
-  PRD=$(cat .ralph-dev/prd.md)
+## Mode Commands
 
-  # Delegate to phase-2-breakdown skill using Task tool
-  # NOTE: This is placeholder - actual implementation uses Task tool
-  # Use the Task tool to invoke:
-  #   subagent_type: "phase-2-breakdown"
-  #   prompt: "PRD Content: $PRD
-  #
-  #   Execute task breakdown:
-  #   1. Extract user stories from PRD
-  #   2. Convert each story to 1-3 atomic tasks (max 30 min each)
-  #   3. Use CLI to create tasks: ralph-dev tasks create
-  #   4. Assign dependencies and priorities
-  #   5. Return task summary"
+| Command | Action |
+|---------|--------|
+| `/ralph-dev {requirement}` | Start new session |
+| `/ralph-dev resume` | Continue from saved state |
+| `/ralph-dev status` | Show current progress |
+| `/ralph-dev cancel` | Archive and clear session |
 
-  # Wait for phase-2-breakdown to complete
-  # phase-2-breakdown will create .ralph-dev/tasks/*.md files via CLI
+---
 
-  # Verify tasks were created (context-compression safe - query CLI)
-  TASK_LIST_RESULT=$(ralph-dev tasks list --json)
+## State Transitions
 
-  if ! echo "$TASK_LIST_RESULT" | jq -e '.success == true' > /dev/null 2>&1; then
-    echo "❌ ERROR: Phase 2 did not create tasks"
-    exit 1
-  fi
-
-  TOTAL_TASKS=$(echo "$TASK_LIST_RESULT" | jq -r '.data.total // 0')
-
-  if [ "$TOTAL_TASKS" -eq 0 ]; then
-    echo "❌ ERROR: Phase 2 created 0 tasks"
-    exit 1
-  fi
-
-  echo "✅ Phase 2 complete: $TOTAL_TASKS tasks created"
-  echo ""
-
-  # phase-2-breakdown will handle user approval internally
-  # and update state to "implement" when approved
-  # This function just verifies completion
-}
+```
+clarify → breakdown → implement ⇄ heal → deliver → complete
 ```
 
-### Phase 3: IMPLEMENT (Autonomous Loop)
+- Each phase updates state via `ralph-dev state update --phase {next}`
+- Phase 4 (heal) is invoked on-demand, not a state transition
+- Phases can only move forward (except implement ⇄ heal loop)
 
-**Function: execute_phase_3_implement**
+---
 
-```bash
-execute_phase_3_implement() {
-  echo "Phase 3/5: Implementing tasks..."
-  echo ""
+## Safety Limits
 
-  # Delegate to phase-3-implement skill using Task tool
-  # NOTE: phase-3-implement handles Phase 4 (healing) internally
-  # NOTE: This is placeholder - actual implementation uses Task tool
-  # Use the Task tool to invoke:
-  #   subagent_type: "phase-3-implement"
-  #   prompt: "Use ralph-dev CLI to manage tasks
-  #
-  #   Execute implementation loop:
-  #   1. Get next task: ralph-dev tasks next --json
-  #   2. For each pending task:
-  #      a. Mark as started: ralph-dev tasks start <task_id>
-  #      b. Spawn implementer agent (fresh context)
-  #      c. If error → invoke phase-4-heal (auto-heal)
-  #      d. Mark complete: ralph-dev tasks done <task_id>
-  #      e. Or mark failed: ralph-dev tasks fail <task_id>
-  #      f. Show progress update
-  #   3. Continue until all tasks processed
-  #   4. Return summary"
+| Limit | Value | Purpose |
+|-------|-------|---------|
+| Orchestrator timeout | 12 hours | Prevent infinite loops |
+| Per-phase timeout | Varies | Defined in each phase skill |
+| Heal attempts | 3 per task | Circuit breaker |
 
-  # Wait for phase-3-implement to complete
-  # phase-3-implement is 100% context-compression resilient
-  # It will update state to "deliver" when done
+---
 
-  # Verify implementation completed (context-compression safe - query CLI)
-  FINAL_STATS=$(ralph-dev tasks list --json)
-  TOTAL_TASKS=$(echo "$FINAL_STATS" | jq -r '.data.total // 0')
-  COMPLETED=$(echo "$FINAL_STATS" | jq -r '.data.completed // 0')
-  FAILED=$(echo "$FINAL_STATS" | jq -r '.data.failed // 0')
+## Constraints
 
-  echo "✅ Phase 3 complete: $COMPLETED/$TOTAL_TASKS tasks completed, $FAILED failed"
-  echo ""
+- **NEVER** skip phases (must complete in order)
+- **NEVER** rely on memory variables (always query CLI)
+- **ALWAYS** get user approval before implement phase
+- **ALWAYS** save state after each phase completion
+- **ALWAYS** show progress updates during long operations
 
-  # phase-3-implement updates state to "deliver" automatically
-}
-```
-
-### Phase 5: DELIVER (Final Verification)
-
-**Function: execute_phase_5_deliver**
-
-```bash
-execute_phase_5_deliver() {
-  echo "Phase 5/5: Delivering with quality gates..."
-  echo ""
-
-  # Delegate to phase-5-deliver skill using Task tool
-  # NOTE: This is placeholder - actual implementation uses Task tool
-  # Use the Task tool to invoke:
-  #   subagent_type: "phase-5-deliver"
-  #   prompt: "Execute delivery workflow:
-  #
-  #   1. Get language config: ralph-dev detect --json
-  #   2. Run quality gates (tests, lint, build)
-  #   3. Create git commit
-  #   4. Create pull request
-  #   5. Return delivery summary"
-
-  # Wait for phase-5-deliver to complete
-  # phase-5-deliver will update state to "complete" when done
-
-  # Verify delivery completed
-  CURRENT_STATE=$(ralph-dev state get --json)
-  FINAL_PHASE=$(echo "$CURRENT_STATE" | jq -r '.phase')
-
-  if [ "$FINAL_PHASE" = "complete" ]; then
-    echo "✅ Phase 5 complete: Delivery successful"
-    echo ""
-  else
-    echo "❌ ERROR: Phase 5 did not complete successfully"
-    echo "   Current phase: $FINAL_PHASE"
-    exit 1
-  fi
-}
-```
-
-### Final Summary
-
-```markdown
-🚀 DELIVERY COMPLETE
-
-┌──────────────────────────────────────────────┐
-│ 📦 Deliverable                               │
-├──────────────────────────────────────────────┤
-│ Commit:      abc123f "feat: Add feature"    │
-│ Branch:      feature/task-management        │
-│ PR:          #456 (ready for review)        │
-│ URL:         github.com/mylukin/ralph-dev/pull/456  │
-├──────────────────────────────────────────────┤
-│ 📊 Statistics                                │
-├──────────────────────────────────────────────┤
-│ Tasks:       15/15 completed                 │
-│ Tests:       124/124 passing                 │
-│ Coverage:    87%                             │
-│ Duration:    47 minutes                      │
-│ Auto-fixes:  2 errors healed                 │
-└──────────────────────────────────────────────┘
-
-Next steps:
-1. Review PR: github.com/mylukin/ralph-dev/pull/456
-2. Merge when approved
-3. Deploy to production
-
-Thank you for using Ralph-dev! 🎉
-```
-
-**Archive session:**
-```bash
-# Clear state
-ralph-dev state clear
-
-# Archive workspace
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-mkdir -p workspace-archive
-cp -r workspace workspace-archive/$TIMESTAMP
-```
+---
 
 ## Error Handling
 
-| Situation | Action |
-|-----------|--------|
+| Error | Action |
+|-------|--------|
+| Phase fails | Log error, show diagnostics, don't auto-retry |
 | User cancels | Save state, show resume command |
-| Phase fails | Log error, escalate to user with diagnostics |
-| Interrupted | Auto-save state, show resume command on next session |
+| Interrupted | State persists, resume on next session |
+| Unknown phase | Report error, suggest manual state reset |
 
-## Resume Mode
+---
 
-When user runs `/ralph-dev resume`:
+## Resume Behavior
 
-1. Load state using CLI: `ralph-dev state get --json`
-2. Check current phase
-3. Resume from current phase:
-   - `clarify` → Continue with remaining questions
-   - `breakdown` → Show plan again for approval
-   - `implement` → Get next task: `ralph-dev tasks next`
-   - `deliver` → Re-run delivery
+When resuming from each phase:
 
-```markdown
-┌────────────────────────────────────┐
-│ 🚀 FOREMAN SESSION RESUMED       │
-├────────────────────────────────────┤
-│ Phase:    $PHASE                   │
-│ Progress: $COMPLETED/$TOTAL tasks  │
-│ Current:  $CURRENT_TASK            │
-├────────────────────────────────────┤
-│ Resuming...                        │
-└────────────────────────────────────┘
-```
-
-## Status Mode
-
-When user runs `/ralph-dev status`:
-
-```bash
-# Get state from CLI
-ralph-dev state get
-
-# Get task list
-ralph-dev tasks list --status completed
-ralph-dev tasks list --status pending
-```
-
-## Cancel Mode
-
-When user runs `/ralph-dev cancel`:
-
-```bash
-# Clear state using CLI
-ralph-dev state clear
-
-# Archive workspace
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-mkdir -p workspace-cancelled
-cp -r workspace workspace-cancelled/$TIMESTAMP
-
-echo "✅ Session cancelled and archived to:"
-echo "   workspace-cancelled/$TIMESTAMP"
-```
-
-## Rules
-
-1. **Sequential phases** - Must complete each phase before next
-2. **User approval** - Get approval for task plan before implementing
-3. **Progress updates** - Show status after each task and every 3 tasks
-4. **State persistence** - Save state after every phase
-5. **Error transparency** - Show healing attempts, don't hide failures
-6. **Clean exit** - Archive session when complete or cancelled
-
-## Notes
-
-- Phase 4 (HEAL) is not a separate phase - it's invoked on-demand by Phase 3
-- All subagents use `context: fork` for fresh context
-- State file is the source of truth for progress
-- Progress log provides audit trail for debugging
+| Phase | Resume Action |
+|-------|---------------|
+| clarify | Continue with remaining questions |
+| breakdown | Show plan again for approval |
+| implement | Get next task via `ralph-dev tasks next` |
+| deliver | Re-run delivery checks |

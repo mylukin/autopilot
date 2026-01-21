@@ -7,20 +7,18 @@ user-invocable: false
 
 # Phase 2: Task Breakdown
 
-## Overview
+## Goal
 
-Read the PRD and break it down into atomic tasks (each <30 minutes), create modular markdown files using CLI, and get user approval before proceeding to implementation.
-
-## When to Use
-
-Invoked by dev-orchestrator as Phase 2, after Phase 1 (Clarify) completes.
+Break down the PRD into atomic, testable tasks (each <30 minutes), create task files via CLI, and get user approval before implementation.
 
 ## Input
 
-- PRD file location: `.ralph-dev/prd.md`
-- Current state from Phase 1
+- PRD file: `.ralph-dev/prd.md`
+- Language config from CLI (if available)
 
-## Execution
+---
+
+## Workflow
 
 ### Step 0: Initialize CLI (Automatic)
 
@@ -31,450 +29,113 @@ Invoked by dev-orchestrator as Phase 2, after Phase 1 (Clarify) completes.
 source ${CLAUDE_PLUGIN_ROOT}/shared/bootstrap-cli.sh
 
 # Verify CLI is ready
-echo "✓ CLI initialized"
-echo ""
+ralph-dev --version
+
+# Context-compression resilience: Verify current phase
+CURRENT_PHASE=$(ralph-dev state get --json 2>/dev/null | jq -r '.phase // "none"')
+echo "Current phase: $CURRENT_PHASE"
+# Expected: breakdown
 ```
 
-### Step 1: Verify .ralph-dev Directory is Gitignored
-
-**SAFETY CHECK:** Prevent accidental commits of state files.
+### Step 1: Verify Prerequisites
 
 ```bash
-echo "🔒 Verifying .ralph-dev directory safety..."
-echo ""
-
-# Use git check-ignore to respect all gitignore levels (local, global, system)
-if ! git check-ignore -q .ralph-dev 2>/dev/null; then
-  echo "⚠️  .ralph-dev/ is NOT in gitignore"
-  echo "   This directory contains temporary state files that should not be committed."
-  echo ""
-  echo "🔧 Fixing: Adding .ralph-dev/ to .gitignore..."
-
-  # Add to .gitignore
-  echo "" >> .gitignore
-  echo "# Ralph-dev temporary files (auto-generated)" >> .gitignore
-  echo ".ralph-dev/state.json" >> .gitignore
-  echo ".ralph-dev/progress.log" >> .gitignore
-  echo ".ralph-dev/debug.log" >> .gitignore
-  echo "" >> .gitignore
-  echo "# Ralph-dev documentation (commit these)" >> .gitignore
-  echo "!.ralph-dev/prd.md" >> .gitignore
-  echo "!.ralph-dev/tasks/" >> .gitignore
-
-  # Commit the fix immediately
-  git add .gitignore
-  git commit -m "chore: add .ralph-dev temporary files to gitignore
-
-Prevents accidental commits of:
-- state.json (workflow state)
-- progress.log (audit trail)
-- debug.log (error logs)
-
-Keeps documentation:
-- prd.md (requirements)
-- tasks/ (task definitions)
-
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
-
-  COMMIT_STATUS=$?
-
-  if [ $COMMIT_STATUS -eq 0 ]; then
-    echo "✅ .gitignore updated and committed"
-  else
-    echo "❌ Failed to commit .gitignore update"
-    echo "   Please add .ralph-dev/ to .gitignore manually"
-    exit 1
-  fi
-else
-  echo "✅ .ralph-dev/ is properly gitignored"
-fi
-echo ""
-```
-
-### Step 2: Read PRD
-
-```bash
-# Read the PRD generated in Phase 1
-PRD_CONTENT=$(cat .ralph-dev/prd.md)
-
-echo "📖 Reading PRD..."
-echo "PRD length: $(echo "$PRD_CONTENT"
-```
-
-### Step 2: Extract User Stories and Requirements
-
-Parse the PRD to extract:
-- User stories from each Epic
-- Functional requirements from each area
-- Technical architecture components
-
-```bash
-# Extract epics and user stories
-# Parse markdown sections:
-# - ## User Stories
-# - ### Epic 1: ...
-# - ### Epic 2: ...
-```
-
-### Step 3: Break Down into Atomic Tasks
-
-For each user story or requirement, create 1-3 atomic tasks.
-
-**Task Breakdown Rules**:
-1. Each task should be completable in <30 minutes
-2. Each task should have clear acceptance criteria
-3. Tasks should follow dependency order
-4. Group related tasks into modules
-
-**Example Breakdown**:
-
-**User Story**: "As a user, I want to sign up with email/password"
-
-→ **Tasks**:
-- `auth.signup.ui` (20 min) - Create signup form component
-- `auth.signup.validation` (15 min) - Add form validation
-- `auth.signup.api` (25 min) - Create signup API endpoint
-- `auth.signup.tests` (20 min) - Write unit & integration tests
-
-### Step 4: Create Task Files Using CLI (Context-Compression Safe)
-
-**CRITICAL:** Create tasks sequentially, one at a time, to ensure immediate persistence to disk. This approach is 100% context-compression resilient.
-
-```bash
-# Initialize tasks directory and index
-# Note: tasks init doesn't support --json flag, check exit code instead
-ralph-dev tasks init \
-  --project-goal "$(extract_goal_from_prd)" \
-  --language "typescript" \
-  --framework "Next.js"
-
-INIT_STATUS=$?
-
-# Check initialization success via exit code
-if [ $INIT_STATUS -eq 0 ]; then
-  echo "✓ Tasks system initialized"
-else
-  echo "✗ Failed to initialize tasks (exit code: $INIT_STATUS)"
-  exit 1
-fi
-
-# ═══════════════════════════════════════════════════════
-# TASK CREATION LOOP (Context-Compression Resilient)
-# ═══════════════════════════════════════════════════════
-# Create each task immediately using CLI - no memory buffering
-# Each call persists to disk before moving to next task
-
-echo "Creating tasks sequentially (context-compression safe)..."
-echo ""
-
-TASK_COUNT=0
-
-# Example: auth.signup.ui
-CREATE_RESULT=$(ralph-dev tasks create \
-  --id "auth.signup.ui" \
-  --module "auth" \
-  --priority 1 \
-  --estimated-minutes 20 \
-  --description "Create signup form component" \
-  --criteria "Component exists at src/components/SignupForm.tsx" \
-  --criteria "Form has email, password, confirmPassword fields" \
-  --criteria "Form validates email format" \
-  --criteria "Form validates password strength (min 8 chars)" \
-  --criteria "Form validates passwords match" \
-  --criteria "Submit button disabled when form invalid" \
-  --criteria "Component properly typed with TypeScript" \
-  --criteria "Unit tests exist and pass (coverage >80%)" \
-  --test-pattern "tests/auth/SignupForm.test.*" \
-  --json 2>&1)
-
-if echo "$CREATE_RESULT" | jq -e '.success == true' > /dev/null 2>&1; then
-  TASK_ID=$(echo "$CREATE_RESULT" | jq -r '.data.taskId // .data.id')
-  TASK_COUNT=$((TASK_COUNT + 1))
-  echo "✓ [$TASK_COUNT] Task $TASK_ID created and persisted to disk"
-else
-  ERROR_MSG=$(echo "$CREATE_RESULT" | jq -r '.error.message' 2>&1 || echo "Unknown error")
-  echo "✗ Failed to create task: $ERROR_MSG"
-  # Log error but continue with next task
-fi
-
-# Example: auth.signup.validation
-CREATE_RESULT=$(ralph-dev tasks create \
-  --id "auth.signup.validation" \
-  --module "auth" \
-  --priority 2 \
-  --estimated-minutes 15 \
-  --description "Add form validation for signup" \
-  --criteria "Email validation using regex or library" \
-  --criteria "Password strength check (min 8 chars, uppercase, lowercase, number)" \
-  --criteria "Passwords match validation" \
-  --criteria "Validation errors display to user" \
-  --criteria "Unit tests for all validation rules" \
-  --test-pattern "tests/auth/validation.test.*" \
-  --json 2>&1)
-
-if echo "$CREATE_RESULT" | jq -e '.success == true' > /dev/null 2>&1; then
-  TASK_ID=$(echo "$CREATE_RESULT" | jq -r '.data.taskId // .data.id')
-  TASK_COUNT=$((TASK_COUNT + 1))
-  echo "✓ [$TASK_COUNT] Task $TASK_ID created and persisted to disk"
-else
-  ERROR_MSG=$(echo "$CREATE_RESULT" | jq -r '.error.message' 2>&1 || echo "Unknown error")
-  echo "✗ Failed to create task: $ERROR_MSG"
-fi
-
-# Continue with remaining tasks...
-# (Each task is created immediately, persisted to disk, then move to next)
-
-echo ""
-
-# ═══════════════════════════════════════════════════════
-# FINAL VERIFICATION (Context-Compression Safe)
-# ═══════════════════════════════════════════════════════
-# Re-query CLI to get actual total (don't trust memory variable)
-VERIFY_RESULT=$(ralph-dev tasks list --json 2>&1)
-
-if echo "$VERIFY_RESULT" | jq -e '.success == true' > /dev/null 2>&1; then
-  ACTUAL_TOTAL=$(echo "$VERIFY_RESULT" | jq -r '.data.total // 0')
-  echo "✅ All tasks created and verified: $ACTUAL_TOTAL tasks persisted to disk"
-else
-  echo "⚠️  Task creation completed but verification failed"
-  echo "   Manual verification: ralph-dev tasks list"
-fi
-echo ""
-```
-
-**Why Sequential Creation is Best:**
-
-- ✅ **Context-Compression Safe**: Each task persists to disk immediately
-- ✅ **Recoverable**: If interrupted, already-created tasks are preserved
-- ✅ **Debuggable**: Errors are caught per-task, not after batch
-- ✅ **Verifiable**: Can query CLI at any point to see created tasks
-- ❌ **Never use batch operations**: Accumulating tasks in memory is vulnerable to context compression
-
-**Helper function to extract goal from PRD:**
-
-```bash
-extract_goal_from_prd() {
-  # Extract first paragraph under "## Project Overview"
-  sed -n '/## Project Overview/,/^##/p' .ralph-dev/prd.md
-    sed '1d;$d'
-    tr '\n' ' '
-    sed 's/  */ /g'
+# Ensure .ralph-dev is gitignored (add if missing)
+git check-ignore -q .ralph-dev 2>/dev/null || {
+  echo ".ralph-dev/" >> .gitignore
+  git add .gitignore && git commit -m "chore: gitignore .ralph-dev temp files"
 }
+
+# Verify PRD exists
+[ -f ".ralph-dev/prd.md" ] || { echo "ERROR: PRD not found"; exit 1; }
 ```
 
-### Step 5: Generate Complete Task List
+### Step 2: Read and Analyze PRD
 
-Create a comprehensive task list covering the entire PRD:
+Read `.ralph-dev/prd.md` and extract:
+- User stories from each Epic
+- Technical requirements
+- Architecture components
 
-**Standard Task Structure**:
+### Step 3: Create Atomic Tasks
 
+For each user story, create 1-3 tasks following these rules:
+
+**Task Breakdown Rules:**
+- Each task completable in <30 minutes
+- Each task has clear, testable acceptance criteria
+- Tasks follow dependency order
+- Group related tasks into modules
+
+**Task Naming Convention:** `{module}.{feature}.{aspect}`
+- Example: `auth.signup.ui`, `auth.signup.api`, `auth.signup.tests`
+
+### Step 4: Create Tasks via CLI (Sequential)
+
+**CRITICAL:** Create tasks one at a time for context-compression resilience.
+
+```bash
+# Initialize tasks
+ralph-dev tasks init --project-goal "..." --language "..."
+
+# Create each task immediately (not batched)
+ralph-dev tasks create \
+  --id "{module}.{feature}" \
+  --module "{module}" \
+  --priority {N} \
+  --estimated-minutes {M} \
+  --description "..." \
+  --criteria "Criterion 1" \
+  --criteria "Criterion 2" \
+  --json
+
+# Verify creation
+ralph-dev tasks list --json
 ```
-Module: setup (Priority 1-5)
-├── setup.scaffold (P1) - Initialize project structure
-├── setup.dependencies (P2) - Install dependencies
-├── setup.config (P3) - Configure build tools
-└── setup.tests (P4) - Setup test framework
 
-Module: auth (Priority 6-15)
-├── auth.signup.ui (P6) - Signup form component
-├── auth.signup.validation (P7) - Form validation
-├── auth.signup.api (P8) - Signup API endpoint
-├── auth.signup.db (P9) - User model & database
-├── auth.signup.tests (P10) - Signup tests
-├── auth.login.ui (P11) - Login form component
-├── auth.login.api (P12) - Login API endpoint
-├── auth.login.session (P13) - Session management
-├── auth.login.tests (P14) - Login tests
-└── auth.logout (P15) - Logout functionality
+### Step 5: Show Task Plan for Approval
 
-Module: tasks (Priority 16-30)
-├── tasks.create.ui (P16) - Task creation form
-├── tasks.create.api (P17) - Create task endpoint
-├── tasks.list.ui (P18) - Task list component
-├── tasks.list.api (P19) - Get tasks endpoint
-├── tasks.update.ui (P20) - Edit task UI
-├── tasks.update.api (P21) - Update task endpoint
-├── tasks.delete (P22) - Delete task functionality
-├── tasks.complete (P23) - Mark complete functionality
-└── tasks.tests (P24) - Task CRUD tests
-
-Module: deployment (Priority 31-35)
-├── deployment.env (P31) - Environment configuration
-├── deployment.build (P32) - Production build setup
-├── deployment.ci (P33) - CI/CD pipeline
-├── deployment.vercel (P34) - Vercel deployment config
-└── deployment.tests (P35) - E2E tests
-```
-
-### Step 6: Show Task Plan to User
-
-Display the task plan in a readable format:
+Display the task plan and ask for user approval:
 
 ```markdown
 📋 Task Plan
 
-**Project**: {Project name from PRD}
 **Total Tasks**: {N} tasks
 **Estimated Time**: {X} hours
 
 ## Tasks by Module
-
-### Module: setup (Priority 1-4, ~1 hour)
-1. [P1] setup.scaffold - Initialize project structure (15 min)
-2. [P2] setup.dependencies - Install dependencies (10 min)
-3. [P3] setup.config - Configure build tools (20 min)
-4. [P4] setup.tests - Setup test framework (15 min)
-
-### Module: auth (Priority 5-14, ~3 hours)
-5. [P5] auth.signup.ui - Signup form component (20 min)
-6. [P6] auth.signup.validation - Form validation (15 min)
-7. [P7] auth.signup.api - Signup API endpoint (25 min)
+### Module: {name} (Priority {range})
+1. [P{n}] {task.id} - {description} ({minutes} min)
 ...
-
-**Total**: {N} tasks, {X} hours estimated
-
----
-
-Do you approve this task breakdown?
-  A) Yes, proceed with implementation
-  B) No, let me modify tasks manually
-  C) Cancel ralph-dev
 ```
 
-**Determine Recommendation:**
+**Use AskUserQuestion tool:**
+- Question: "Do you approve this task breakdown?"
+- Options: "Yes, proceed", "Modify first", "Cancel"
+- Add "(Recommended)" to suggested option based on task quality
 
-Before asking, analyze task breakdown quality to determine which option to recommend:
+### Step 6: Handle Response & Update State
 
 ```bash
-# Analyze task breakdown quality using JSON output
-TASKS_JSON=$(ralph-dev tasks list --json)
-
-# Check if command succeeded
-if ! echo "$TASKS_JSON" | jq -e '.success == true' > /dev/null 2>&1; then
-  echo "✗ Failed to list tasks"
-  exit 1
-fi
-
-# Extract task metrics
-TOTAL_TASKS=$(echo "$TASKS_JSON" | jq -r '.data.total')
-MAX_ESTIMATE=$(echo "$TASKS_JSON" | jq -r '[.data.tasks[].estimatedMinutes // 0] | max')
-
-echo "📊 Task breakdown analysis:"
-echo "   Total tasks: $TOTAL_TASKS"
-echo "   Max estimate: $MAX_ESTIMATE min"
-
-# Check if all tasks have clear acceptance criteria
-ALL_HAVE_CRITERIA=true
-for task_file in .ralph-dev/tasks/*/*.md; do
-  if ! grep -q "## Acceptance Criteria" "$task_file"; then
-    ALL_HAVE_CRITERIA=false
-    break
-  fi
-done
-
-# Determine which option to recommend
-REALISTIC_SIZES=true
-if [ "$MAX_ESTIMATE" -gt 30 ]; then
-  REALISTIC_SIZES=false
-fi
-
-if [ "$ALL_HAVE_CRITERIA" = true ] && [ "$REALISTIC_SIZES" = true ] && [ "$TOTAL_TASKS" -lt 50 ]; then
-  RECOMMENDED_LABEL="Yes, proceed (Recommended)"
-  echo "   Quality: ✓ High (recommend proceeding)"
-else
-  RECOMMENDED_LABEL="Modify first (Recommended)"
-  echo "   Quality: ⚠ Needs review"
-fi
-```
-
-**Ask User with Official Structure:**
-
-Use AskUserQuestion tool with proper JSON structure:
-
-```json
-{
-  "questions": [
-    {
-      "question": "Do you approve this task breakdown?",
-      "header": "Approval",
-      "multiSelect": false,
-      "options": [
-        {
-          "label": "Yes, proceed",
-          "description": "Start implementing all tasks as planned. Criteria are clear and estimates are reasonable."
-        },
-        {
-          "label": "Modify first",
-          "description": "Let me review and edit task files in .ralph-dev/tasks/ before proceeding"
-        },
-        {
-          "label": "Cancel",
-          "description": "Stop Ralph-dev and discard this task breakdown entirely"
-        }
-      ]
-    }
-  ]
-}
-```
-
-**IMPORTANT:**
-- Dynamically add "(Recommended)" suffix to the `label` field based on analysis above
-- If breakdown quality is high → Use "Yes, proceed (Recommended)"
-- If breakdown needs review → Use "Modify first (Recommended)"
-- ✅ Wrapped in `questions` array (official structure)
-- ✅ `multiSelect: false` explicitly set
-- ✅ `header` is 8 characters (within 12-char limit)
-- ✅ Clear descriptions explaining what happens next
-
-### Step 7: Handle User Response (with Error Handling)
-
-```bash
-USER_RESPONSE="$ANSWER"
-
-case "$USER_RESPONSE" in
-  "Yes, proceed")
-    echo "✅ Task breakdown approved"
-
-    # Update state with JSON output and error handling
-    UPDATE_RESULT=$(ralph-dev state update --phase implement --json)
-
-    if echo "$UPDATE_RESULT" | jq -e '.success == true' > /dev/null 2>&1; then
-      echo "✓ State updated to implement phase"
-    else
-      ERROR_MSG=$(echo "$UPDATE_RESULT" | jq -r '.error.message')
-      echo "✗ Failed to update state: $ERROR_MSG"
-      exit 1
-    fi
+case "$ANSWER" in
+  "Yes, proceed"*)
+    ralph-dev state update --phase implement
     ;;
-
-  "Modify first")
-    echo "⏸️  Paused for manual task editing"
-    echo "📝 Edit files in: .ralph-dev/tasks/"
-    echo "▶️  Resume with: /ralph-dev resume"
-
-    # Keep state at breakdown phase
-    ralph-dev state update --phase breakdown --json > /dev/null
+  "Modify first"*)
+    echo "Edit files in: .ralph-dev/tasks/"
+    echo "Resume with: /ralph-dev resume"
     exit 0
     ;;
-
-  "Cancel")
-    echo "❌ Ralph-dev cancelled by user"
-
-    # Clear state with confirmation
-    CLEAR_RESULT=$(ralph-dev state clear --json)
-
-    if echo "$CLEAR_RESULT" | jq -e '.success == true' > /dev/null 2>&1; then
-      echo "✓ State cleared"
-    fi
+  "Cancel"*)
+    ralph-dev state clear
     exit 1
     ;;
 esac
 ```
 
-### Step 8: Return Result
+### Step 7: Return Result
 
-Return structured result to orchestrator:
-
+**REQUIRED Output Format:**
 ```yaml
 ---PHASE RESULT---
 phase: breakdown
@@ -483,17 +144,12 @@ tasks_created: {N}
 tasks_dir: .ralph-dev/tasks
 estimated_hours: {X}
 next_phase: implement
-summary: |
-  Created {N} tasks across {M} modules.
-  Estimated completion: {X} hours
-  User approved task breakdown.
-  Ready for implementation.
 ---END PHASE RESULT---
 ```
 
-## Task File Format
+---
 
-Each task file follows this structure:
+## Task File Format
 
 ```markdown
 ---
@@ -503,66 +159,42 @@ priority: {number}
 status: pending
 estimatedMinutes: {number}
 dependencies: [{task-ids}]
-testRequirements:
-  unit:
-    required: true
-    pattern: "tests/{module}/**/*.test.*"
-  e2e:
-    required: false
-    pattern: "e2e/{module}/**/*.spec.*"
 ---
 # {Task Title}
 
 ## Description
-
 {What needs to be implemented}
 
 ## Acceptance Criteria
-
-1. {Testable criterion 1}
-2. {Testable criterion 2}
-3. {Testable criterion 3}
-...
-
-## Notes
-
-{Any additional context or implementation notes}
+1. {Testable criterion}
+2. {Testable criterion}
 ```
+
+---
+
+## Tool Constraints
+
+### AskUserQuestion
+- Max 4 questions per call
+- `header`: ≤12 chars (e.g., "Approval")
+- Add "(Recommended)" to suggested option
+
+---
+
+## Constraints
+
+- **NEVER** create tasks >30 minutes
+- **NEVER** batch task creation in memory (context-compression vulnerability)
+- **ALWAYS** verify task creation via CLI after each create
+- **ALWAYS** get user approval before transitioning to implement
+- **ALWAYS** return structured PHASE RESULT block
+
+---
 
 ## Error Handling
 
 | Error | Action |
 |-------|--------|
-| PRD file not found | Fail gracefully, prompt to run Phase 1 |
-| Task creation fails | Retry, or create tasks as JSON fallback |
+| PRD not found | Fail, prompt to run Phase 1 |
+| Task creation fails | Retry once, then report error |
 | User rejects plan | Save state, allow manual editing |
-| Index.json creation fails | Try alternative format or location |
-
-## Example Output
-
-**Input PRD**: Task management app with auth
-
-**Output**:
-- 35 tasks created in `.ralph-dev/tasks/`
-- Modules: setup (4), auth (10), tasks (16), deployment (5)
-- Estimated time: 8.5 hours
-- Priority order: 1-35
-- All tasks have acceptance criteria and test requirements
-
-## Rules
-
-1. **Each task <30 minutes** - Break down larger features
-2. **Clear acceptance criteria** - Must be testable
-3. **Proper dependencies** - Ensure correct order
-4. **Module organization** - Group related tasks
-5. **Get user approval** - Don't proceed without confirmation
-6. **Use CLI when available** - For task management
-7. **Create modular files** - One file per task
-
-## Notes
-
-- Task breakdown quality determines implementation success
-- Include setup and deployment tasks, not just features
-- Consider test tasks separately if complex
-- Priority numbers determine execution order
-- Ensure dependencies are realistic and necessary
