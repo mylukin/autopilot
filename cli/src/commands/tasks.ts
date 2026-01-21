@@ -6,7 +6,6 @@ import { handleError, Errors } from '../core/error-handler';
 import { successResponse, outputResponse } from '../core/response-wrapper';
 import { createTaskService, createContextService } from './service-factory';
 import { Task } from '../domain/task-entity';
-import { TaskContext } from '../services/context-service';
 import { FileSystemIndexRepository } from '../repositories/index-repository.service';
 import { FileSystemService } from '../infrastructure/file-system.service';
 
@@ -129,13 +128,14 @@ export function registerTaskCommands(program: Command, workspaceDir: string): vo
       await indexRepository.write(index);
       console.log(chalk.green('✅ Tasks system initialized'));
       console.log(chalk.gray(`   Location: ${tasksDir}/index.json`));
+      process.exit(ExitCode.SUCCESS);
     });
 
   // Create a new task
   tasks
-    .command('create')
-    .description('Create a new task')
-    .requiredOption('--id <id>', 'Task ID (e.g., auth.signup.ui)')
+    .command('create [taskId]')
+    .description('Create a new task (ID can be positional or --id)')
+    .option('--id <id>', 'Task ID (e.g., auth.signup.ui)')
     .requiredOption('--module <module>', 'Module name (e.g., auth)')
     .option('--priority <priority>', 'Priority (default: 1)', '1')
     .option('--estimated-minutes <minutes>', 'Estimated minutes (default: 30)', '30')
@@ -143,11 +143,18 @@ export function registerTaskCommands(program: Command, workspaceDir: string): vo
     .option('--criteria <criteria...>', 'Acceptance criteria (can specify multiple)')
     .option('--dependencies <deps...>', 'Task dependencies')
     .option('--test-pattern <pattern>', 'Test file pattern')
-    .action(async (options) => {
+    .action(async (taskId, options) => {
+      // Resolve task ID: positional argument takes precedence over --id option
+      const resolvedId = taskId || options.id;
+      if (!resolvedId) {
+        handleError(Errors.invalidInput('Task ID is required. Provide as positional argument or use --id'), false);
+        return;
+      }
+
       try {
         // Call service to create task
         const task = await taskService.createTask({
-          id: options.id,
+          id: resolvedId,
           module: options.module,
           priority: parseInt(options.priority),
           estimatedMinutes: parseInt(options.estimatedMinutes),
@@ -162,6 +169,8 @@ export function registerTaskCommands(program: Command, workspaceDir: string): vo
         console.log(chalk.gray(`   Module: ${task.module}`));
         console.log(chalk.gray(`   Priority: ${task.priority}`));
         console.log(chalk.gray(`   Estimated: ${task.estimatedMinutes} min`));
+
+        process.exit(ExitCode.SUCCESS);
       } catch (error) {
         handleError(error as any, false);
       }

@@ -115,6 +115,57 @@ describe('tasks commands', () => {
       expect(index.tasks['auth.login']).toBeDefined();
     });
 
+    it('should create task with positional argument (shorthand)', async () => {
+      registerTaskCommands(program, testDir);
+      await program.parseAsync([
+        'node', 'test', 'tasks', 'create',
+        'db.migration',  // positional argument instead of --id
+        '--module', 'database',
+        '--description', 'Run database migration',
+      ]);
+
+      // Task file is named after full task ID: database/db.migration.md
+      const taskFile = path.join(tasksDir, 'database', 'db.migration.md');
+      expect(fs.existsSync(taskFile)).toBe(true);
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('✅ Task db.migration created'));
+
+      const index = fs.readJSONSync(indexFile);
+      expect(index.tasks['db.migration']).toBeDefined();
+    });
+
+    it('should prefer positional argument over --id option', async () => {
+      registerTaskCommands(program, testDir);
+      await program.parseAsync([
+        'node', 'test', 'tasks', 'create',
+        'positional.task',  // positional argument
+        '--id', 'option.task',  // --id option (should be ignored)
+        '--module', 'test',
+        '--description', 'Test precedence',
+      ]);
+
+      // Task file is named after full task ID: test/positional.task.md
+      const taskFile = path.join(tasksDir, 'test', 'positional.task.md');
+      expect(fs.existsSync(taskFile)).toBe(true);
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('✅ Task positional.task created'));
+
+      const index = fs.readJSONSync(indexFile);
+      expect(index.tasks['positional.task']).toBeDefined();
+      expect(index.tasks['option.task']).toBeUndefined();
+    });
+
+    it('should error when no task ID is provided', async () => {
+      registerTaskCommands(program, testDir);
+      await program.parseAsync([
+        'node', 'test', 'tasks', 'create',
+        '--module', 'test',
+        '--description', 'No ID task',
+      ]);
+
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      const errorMessage = consoleErrorSpy.mock.calls.flat().join(' ');
+      expect(errorMessage).toContain('Task ID is required');
+    });
+
     it('should create task with priority and estimated minutes', async () => {
       registerTaskCommands(program, testDir);
       await program.parseAsync([

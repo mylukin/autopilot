@@ -78,8 +78,8 @@ ralph-dev tasks init --project-goal "User authentication system" --language type
 
 **Create a task:**
 ```bash
-ralph-dev tasks create \
-  --id <taskId> \
+# Shorthand syntax (positional argument):
+ralph-dev tasks create <taskId> \
   --module <module> \
   --description <desc> \
   [--priority <1-10>] \
@@ -88,9 +88,15 @@ ralph-dev tasks create \
   [--dependencies <dep1> --dependencies <dep2>] \
   [--test-pattern <pattern>]
 
-# Example:
+# Long form (with --id option):
 ralph-dev tasks create \
-  --id auth.login.ui \
+  --id <taskId> \
+  --module <module> \
+  --description <desc> \
+  [...]
+
+# Example (shorthand):
+ralph-dev tasks create auth.login.ui \
   --module auth \
   --description "Create login form component" \
   --priority 2 \
