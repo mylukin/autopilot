@@ -408,6 +408,28 @@ ralph-dev init --json     # JSON output
 
 ---
 
+## Update CLI and Plugin
+
+\`\`\`bash
+# Check for updates
+ralph-dev update --check
+ralph-dev update --check --json
+
+# Update CLI and plugin cache
+ralph-dev update
+
+# Update CLI only
+ralph-dev update --cli-only
+
+# Update plugin cache only (marketplace + cache)
+ralph-dev update --plugin-only
+
+# JSON output
+ralph-dev update --json
+\`\`\`
+
+---
+
 ## Common Patterns
 
 ### Implementation Loop

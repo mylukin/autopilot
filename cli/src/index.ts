@@ -8,6 +8,7 @@ import { registerDetectCommand } from './commands/detect';
 import { registerDetectAICommand } from './commands/detect-ai';
 import { registerInitCommand } from './commands/init';
 import { registerCircuitBreakerCommand } from './commands/circuit-breaker';
+import { registerUpdateCommand } from './commands/update';
 import { createAutoUpdateService } from './services/auto-update.service';
 import { version, name } from '../package.json';
 
@@ -29,6 +30,7 @@ registerDetectCommand(program, workspaceDir);
 registerDetectAICommand(program, workspaceDir);
 registerInitCommand(program, workspaceDir);
 registerCircuitBreakerCommand(program, workspaceDir);
+registerUpdateCommand(program);
 
 // Auto-update check (non-blocking, runs in background)
 // Skip if NO_UPDATE_NOTIFIER is set or in CI environment
