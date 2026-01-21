@@ -1,0 +1,413 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { Command } from 'commander';
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import { registerCircuitBreakerCommand } from '../../src/commands/circuit-breaker';
+import { CircuitState } from '../../src/core/circuit-breaker';
+
+describe('Circuit Breaker Command', () => {
+  let program: Command;
+  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+  let processExitSpy: ReturnType<typeof vi.spyOn>;
+  const testDir = path.join(__dirname, '__test-circuit-breaker__');
+  const stateFilePath = path.join(testDir, '.ralph-dev', 'circuit-breaker.json');
+
+  beforeEach(() => {
+    program = new Command();
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    processExitSpy = vi
+      .spyOn(process, 'exit')
+      .mockImplementation((() => {}) as unknown as typeof process.exit);
+
+    fs.ensureDirSync(path.join(testDir, '.ralph-dev'));
+  });
+
+  afterEach(() => {
+    consoleLogSpy.mockRestore();
+    processExitSpy.mockRestore();
+    vi.clearAllMocks();
+    fs.removeSync(testDir);
+  });
+
+  describe('status command', () => {
+    it('should return default state when no state file exists', async () => {
+      registerCircuitBreakerCommand(program, testDir);
+      await program.parseAsync(['node', 'test', 'circuit-breaker', 'status', '--json']);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+      const jsonCall = consoleLogSpy.mock.calls.find(
+        (call) => typeof call[0] === 'string' && call[0].includes('"success":true')
+      );
+      expect(jsonCall).toBeDefined();
+      const result = JSON.parse(jsonCall![0] as string);
+      expect(result.data.state).toBe(CircuitState.CLOSED);
+      expect(result.data.failureCount).toBe(0);
+    });
+
+    it('should return current state from file', async () => {
+      fs.writeJsonSync(stateFilePath, {
+        state: CircuitState.OPEN,
+        failureCount: 5,
+        successCount: 0,
+        lastFailureTime: Date.now(),
+        lastResetTime: null,
+      });
+
+      registerCircuitBreakerCommand(program, testDir);
+      await program.parseAsync(['node', 'test', 'circuit-breaker', 'status', '--json']);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+      const jsonCall = consoleLogSpy.mock.calls.find(
+        (call) => typeof call[0] === 'string' && call[0].includes('"success":true')
+      );
+      const result = JSON.parse(jsonCall![0] as string);
+      expect(result.data.state).toBe(CircuitState.OPEN);
+      expect(result.data.failureCount).toBe(5);
+    });
+
+    it('should display human-readable output without --json', async () => {
+      registerCircuitBreakerCommand(program, testDir);
+      await program.parseAsync(['node', 'test', 'circuit-breaker', 'status']);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Circuit Breaker Status')
+      );
+    });
+
+    it('should show warning when circuit is OPEN', async () => {
+      fs.writeJsonSync(stateFilePath, {
+        state: CircuitState.OPEN,
+        failureCount: 5,
+        successCount: 0,
+        lastFailureTime: Date.now(),
+        lastResetTime: null,
+      });
+
+      registerCircuitBreakerCommand(program, testDir);
+      await program.parseAsync(['node', 'test', 'circuit-breaker', 'status']);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+      const warningCall = consoleLogSpy.mock.calls.find(
+        (call) => typeof call[0] === 'string' && call[0].includes('Circuit is OPEN')
+      );
+      expect(warningCall).toBeDefined();
+    });
+
+    it('should display last failure and reset times when available', async () => {
+      const now = Date.now();
+      fs.writeJsonSync(stateFilePath, {
+        state: CircuitState.CLOSED,
+        failureCount: 0,
+        successCount: 0,
+        lastFailureTime: now - 60000,
+        lastResetTime: now,
+      });
+
+      registerCircuitBreakerCommand(program, testDir);
+      await program.parseAsync(['node', 'test', 'circuit-breaker', 'status']);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+      const failureCall = consoleLogSpy.mock.calls.find(
+        (call) => typeof call[0] === 'string' && call[0].includes('Last Failure')
+      );
+      const resetCall = consoleLogSpy.mock.calls.find(
+        (call) => typeof call[0] === 'string' && call[0].includes('Last Reset')
+      );
+      expect(failureCall).toBeDefined();
+      expect(resetCall).toBeDefined();
+    });
+  });
+
+  describe('reset command', () => {
+    it('should reset circuit to CLOSED state', async () => {
+      fs.writeJsonSync(stateFilePath, {
+        state: CircuitState.OPEN,
+        failureCount: 5,
+        successCount: 0,
+        lastFailureTime: Date.now(),
+        lastResetTime: null,
+      });
+
+      registerCircuitBreakerCommand(program, testDir);
+      await program.parseAsync(['node', 'test', 'circuit-breaker', 'reset', '--json']);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+      const jsonCall = consoleLogSpy.mock.calls.find(
+        (call) => typeof call[0] === 'string' && call[0].includes('"success":true')
+      );
+      const result = JSON.parse(jsonCall![0] as string);
+      expect(result.data.previousState).toBe(CircuitState.OPEN);
+      expect(result.data.newState).toBe(CircuitState.CLOSED);
+      expect(result.data.wasReset).toBe(true);
+
+      // Verify file was updated
+      const savedState = fs.readJsonSync(stateFilePath);
+      expect(savedState.state).toBe(CircuitState.CLOSED);
+      expect(savedState.failureCount).toBe(0);
+    });
+
+    it('should indicate when circuit was already CLOSED', async () => {
+      registerCircuitBreakerCommand(program, testDir);
+      await program.parseAsync(['node', 'test', 'circuit-breaker', 'reset', '--json']);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+      const jsonCall = consoleLogSpy.mock.calls.find(
+        (call) => typeof call[0] === 'string' && call[0].includes('"success":true')
+      );
+      const result = JSON.parse(jsonCall![0] as string);
+      expect(result.data.wasReset).toBe(false);
+    });
+
+    it('should display human-readable reset message', async () => {
+      fs.writeJsonSync(stateFilePath, {
+        state: CircuitState.OPEN,
+        failureCount: 5,
+        successCount: 0,
+        lastFailureTime: Date.now(),
+        lastResetTime: null,
+      });
+
+      registerCircuitBreakerCommand(program, testDir);
+      await program.parseAsync(['node', 'test', 'circuit-breaker', 'reset']);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+      const resetCall = consoleLogSpy.mock.calls.find(
+        (call) => typeof call[0] === 'string' && call[0].includes('Circuit breaker reset')
+      );
+      expect(resetCall).toBeDefined();
+    });
+  });
+
+  describe('fail command', () => {
+    it('should increment failure count', async () => {
+      registerCircuitBreakerCommand(program, testDir);
+      await program.parseAsync(['node', 'test', 'circuit-breaker', 'fail', '--json']);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+      const jsonCall = consoleLogSpy.mock.calls.find(
+        (call) => typeof call[0] === 'string' && call[0].includes('"success":true')
+      );
+      const result = JSON.parse(jsonCall![0] as string);
+      expect(result.data.failureCount).toBe(1);
+      expect(result.data.isOpen).toBe(false);
+    });
+
+    it('should open circuit after reaching threshold', async () => {
+      fs.writeJsonSync(stateFilePath, {
+        state: CircuitState.CLOSED,
+        failureCount: 4,
+        successCount: 0,
+        lastFailureTime: null,
+        lastResetTime: null,
+      });
+
+      registerCircuitBreakerCommand(program, testDir);
+      await program.parseAsync(['node', 'test', 'circuit-breaker', 'fail', '--json']);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+      const jsonCall = consoleLogSpy.mock.calls.find(
+        (call) => typeof call[0] === 'string' && call[0].includes('"success":true')
+      );
+      const result = JSON.parse(jsonCall![0] as string);
+      expect(result.data.failureCount).toBe(5);
+      expect(result.data.isOpen).toBe(true);
+      expect(result.data.state).toBe(CircuitState.OPEN);
+    });
+
+    it('should use custom threshold', async () => {
+      fs.writeJsonSync(stateFilePath, {
+        state: CircuitState.CLOSED,
+        failureCount: 2,
+        successCount: 0,
+        lastFailureTime: null,
+        lastResetTime: null,
+      });
+
+      registerCircuitBreakerCommand(program, testDir);
+      await program.parseAsync([
+        'node',
+        'test',
+        'circuit-breaker',
+        'fail',
+        '--threshold',
+        '3',
+        '--json',
+      ]);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+      const jsonCall = consoleLogSpy.mock.calls.find(
+        (call) => typeof call[0] === 'string' && call[0].includes('"success":true')
+      );
+      const result = JSON.parse(jsonCall![0] as string);
+      expect(result.data.failureCount).toBe(3);
+      expect(result.data.isOpen).toBe(true);
+      expect(result.data.threshold).toBe(3);
+    });
+
+    it('should reopen circuit from HALF_OPEN on failure', async () => {
+      fs.writeJsonSync(stateFilePath, {
+        state: CircuitState.HALF_OPEN,
+        failureCount: 0,
+        successCount: 1,
+        lastFailureTime: null,
+        lastResetTime: null,
+      });
+
+      registerCircuitBreakerCommand(program, testDir);
+      await program.parseAsync(['node', 'test', 'circuit-breaker', 'fail', '--json']);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+      const jsonCall = consoleLogSpy.mock.calls.find(
+        (call) => typeof call[0] === 'string' && call[0].includes('"success":true')
+      );
+      const result = JSON.parse(jsonCall![0] as string);
+      expect(result.data.state).toBe(CircuitState.OPEN);
+      expect(result.data.isOpen).toBe(true);
+    });
+
+    it('should display human-readable failure message', async () => {
+      registerCircuitBreakerCommand(program, testDir);
+      await program.parseAsync(['node', 'test', 'circuit-breaker', 'fail']);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+      const failCall = consoleLogSpy.mock.calls.find(
+        (call) => typeof call[0] === 'string' && call[0].includes('Failure recorded')
+      );
+      expect(failCall).toBeDefined();
+    });
+
+    it('should display circuit OPEN message when threshold reached', async () => {
+      fs.writeJsonSync(stateFilePath, {
+        state: CircuitState.CLOSED,
+        failureCount: 4,
+        successCount: 0,
+        lastFailureTime: null,
+        lastResetTime: null,
+      });
+
+      registerCircuitBreakerCommand(program, testDir);
+      await program.parseAsync(['node', 'test', 'circuit-breaker', 'fail']);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+      const openCall = consoleLogSpy.mock.calls.find(
+        (call) => typeof call[0] === 'string' && call[0].includes('Circuit breaker OPEN')
+      );
+      expect(openCall).toBeDefined();
+    });
+  });
+
+  describe('success command', () => {
+    it('should reset failure count on success in CLOSED state', async () => {
+      fs.writeJsonSync(stateFilePath, {
+        state: CircuitState.CLOSED,
+        failureCount: 3,
+        successCount: 0,
+        lastFailureTime: null,
+        lastResetTime: null,
+      });
+
+      registerCircuitBreakerCommand(program, testDir);
+      await program.parseAsync(['node', 'test', 'circuit-breaker', 'success', '--json']);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+      const savedState = fs.readJsonSync(stateFilePath);
+      expect(savedState.failureCount).toBe(0);
+    });
+
+    it('should increment success count in HALF_OPEN state', async () => {
+      fs.writeJsonSync(stateFilePath, {
+        state: CircuitState.HALF_OPEN,
+        failureCount: 0,
+        successCount: 0,
+        lastFailureTime: null,
+        lastResetTime: null,
+      });
+
+      registerCircuitBreakerCommand(program, testDir);
+      await program.parseAsync(['node', 'test', 'circuit-breaker', 'success', '--json']);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+      const jsonCall = consoleLogSpy.mock.calls.find(
+        (call) => typeof call[0] === 'string' && call[0].includes('"success":true')
+      );
+      const result = JSON.parse(jsonCall![0] as string);
+      expect(result.data.successCount).toBe(1);
+      expect(result.data.state).toBe(CircuitState.HALF_OPEN);
+    });
+
+    it('should close circuit from HALF_OPEN after success threshold', async () => {
+      fs.writeJsonSync(stateFilePath, {
+        state: CircuitState.HALF_OPEN,
+        failureCount: 0,
+        successCount: 1,
+        lastFailureTime: null,
+        lastResetTime: null,
+      });
+
+      registerCircuitBreakerCommand(program, testDir);
+      await program.parseAsync(['node', 'test', 'circuit-breaker', 'success', '--json']);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+      const jsonCall = consoleLogSpy.mock.calls.find(
+        (call) => typeof call[0] === 'string' && call[0].includes('"success":true')
+      );
+      const result = JSON.parse(jsonCall![0] as string);
+      expect(result.data.state).toBe(CircuitState.CLOSED);
+      expect(result.data.successCount).toBe(0);
+      expect(result.data.failureCount).toBe(0);
+    });
+
+    it('should use custom success threshold', async () => {
+      fs.writeJsonSync(stateFilePath, {
+        state: CircuitState.HALF_OPEN,
+        failureCount: 0,
+        successCount: 2,
+        lastFailureTime: null,
+        lastResetTime: null,
+      });
+
+      registerCircuitBreakerCommand(program, testDir);
+      await program.parseAsync([
+        'node',
+        'test',
+        'circuit-breaker',
+        'success',
+        '--success-threshold',
+        '3',
+        '--json',
+      ]);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+      const jsonCall = consoleLogSpy.mock.calls.find(
+        (call) => typeof call[0] === 'string' && call[0].includes('"success":true')
+      );
+      const result = JSON.parse(jsonCall![0] as string);
+      expect(result.data.state).toBe(CircuitState.CLOSED);
+    });
+
+    it('should display human-readable success message', async () => {
+      registerCircuitBreakerCommand(program, testDir);
+      await program.parseAsync(['node', 'test', 'circuit-breaker', 'success']);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+      const successCall = consoleLogSpy.mock.calls.find(
+        (call) => typeof call[0] === 'string' && call[0].includes('Success recorded')
+      );
+      expect(successCall).toBeDefined();
+    });
+  });
+
+  describe('alias', () => {
+    it('should support cb alias', async () => {
+      registerCircuitBreakerCommand(program, testDir);
+      await program.parseAsync(['node', 'test', 'cb', 'status', '--json']);
+
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+      const jsonCall = consoleLogSpy.mock.calls.find(
+        (call) => typeof call[0] === 'string' && call[0].includes('"success":true')
+      );
+      expect(jsonCall).toBeDefined();
+    });
+  });
+});

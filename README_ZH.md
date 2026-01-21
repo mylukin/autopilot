@@ -29,7 +29,10 @@ npm install -g ralph-dev
 # 步骤 3：安装插件
 /plugin install ralph-dev
 
-# 步骤 4：启动第一个任务
+# 步骤 4：初始化项目（安装工作流规则）
+ralph-dev init
+
+# 步骤 5：启动第一个任务
 /ralph-dev "构建用户认证 REST API"
 ```
 
@@ -221,6 +224,12 @@ npm install -g ralph-dev
 ```bash
 /plugin install ralph-dev
 ```
+
+**步骤 4：初始化项目**
+```bash
+ralph-dev init
+```
+这会将工作流规则安装到 `.claude/rules/` 目录，以便在开发过程中提供更好的 AI 指导。
 
 **注意：** TypeScript CLI 在首次使用时自动构建。构建时间取决于系统性能。
 

@@ -29,7 +29,10 @@ npm install -g ralph-dev
 # Step 3: Install plugin
 /plugin install ralph-dev
 
-# Step 4: Start your first task
+# Step 4: Initialize project (installs workflow rules)
+ralph-dev init
+
+# Step 5: Start your first task
 /ralph-dev "Build a REST API for user authentication"
 ```
 
@@ -221,6 +224,12 @@ npm install -g ralph-dev
 ```bash
 /plugin install ralph-dev
 ```
+
+**Step 4: Initialize project**
+```bash
+ralph-dev init
+```
+This installs workflow rules to `.claude/rules/` for better AI guidance during development.
 
 **Note:** The TypeScript CLI auto-builds on first use. Build time depends on your system performance.
 
