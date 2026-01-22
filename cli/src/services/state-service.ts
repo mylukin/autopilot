@@ -225,6 +225,7 @@ export class StateService implements IStateService {
       { src: 'state.json', name: 'state.json' },
       { src: 'prd.md', name: 'prd.md' },
       { src: 'tasks', name: 'tasks' },
+      { src: 'context', name: 'context' },
       { src: 'progress.log', name: 'progress.log' },
       { src: 'debug.log', name: 'debug.log' },
     ];
@@ -254,6 +255,12 @@ export class StateService implements IStateService {
     // Remove tasks directory after archiving
     if (hasTasksDir) {
       await this.fileSystem.remove(path.join(ralphDevDir, 'tasks'));
+    }
+
+    // Remove context directory after archiving
+    const contextDir = path.join(ralphDevDir, 'context');
+    if (await this.fileSystem.exists(contextDir)) {
+      await this.fileSystem.remove(contextDir);
     }
 
     // Remove progress.log and debug.log if they exist
