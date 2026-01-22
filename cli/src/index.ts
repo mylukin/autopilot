@@ -9,7 +9,7 @@ import { registerDetectAICommand } from './commands/detect-ai';
 import { registerInitCommand } from './commands/init';
 import { registerCircuitBreakerCommand } from './commands/circuit-breaker';
 import { registerUpdateCommand } from './commands/update';
-import { createAutoUpdateService } from './services/auto-update.service';
+import { checkAndNotify } from './services/update-checker.service';
 import { version, name } from '../package.json';
 
 const program = new Command();
@@ -32,18 +32,13 @@ registerInitCommand(program, workspaceDir);
 registerCircuitBreakerCommand(program, workspaceDir);
 registerUpdateCommand(program);
 
-// Auto-update check (non-blocking, runs in background)
+// Auto-update check - runs on EVERY command execution
+// Shows notification if update available (cached check, 24 hour interval)
 // Skip if NO_UPDATE_NOTIFIER is set or in CI environment
-const shouldCheckUpdate = !process.env.NO_UPDATE_NOTIFIER && !process.env.CI;
-
-if (shouldCheckUpdate) {
-  const updateService = createAutoUpdateService(name, version, {
-    autoUpdate: false, // Don't auto-update, just show notification
-  });
-
-  // Show update notification (non-blocking)
-  updateService.notify();
-}
+checkAndNotify({
+  packageName: name,
+  currentVersion: version,
+});
 
 // Parse command line arguments
 program.parse(process.argv);
